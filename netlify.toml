@@ -1,0 +1,6 @@
+[build]
+  command = "# No build command needed for static site"
+  publish = "public"
+
+[functions]
+  directory = "netlify/functions"

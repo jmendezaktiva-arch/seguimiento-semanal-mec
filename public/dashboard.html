@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Resultados</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        #user-view, #admin-view { display: none; }
+    </style>
+</head>
+<body class="bg-slate-100">
+
+    <header class="bg-white shadow-sm">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="flex h-16 justify-between">
+                <div class="flex items-center">
+                    <img class="h-10 w-auto" src="/images/logo.png" alt="Logo de la Empresa" onerror="this.onerror=null;this.src='https://placehold.co/100x40/3b82f6/ffffff?text=Logo';">
+                    <span class="ml-3 text-lg font-bold text-slate-800">Minuta COM-FR-01</span>
+                </div>
+                <div class="flex items-center">
+                    <nav class="space-x-4">
+                        <a href="/tasks.html" class="rounded-md px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700">Tareas</a>
+                        <a href="/dashboard.html" class="rounded-md bg-blue-100 px-3 py-2 text-sm font-medium text-blue-700">Dashboard</a>
+                        <a href="/checklist.html" class="rounded-md px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700">Checklist</a>
+                        <a href="/agenda.html" class="rounded-md px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700">Orden del día</a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+
+<div id="user-view">
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+        
+        <div class="rounded-lg bg-white p-6 shadow">
+            <h3 class="text-lg font-bold text-slate-800">Resultado Clave de la Semana</h3>
+            <div id="user-results-container" class="mt-4 text-slate-600">Cargando...</div>
+        </div>
+
+        <div class="rounded-lg bg-white p-6 shadow md:col-span-2">
+            <h3 class="text-lg font-bold text-slate-800">Cumplimiento de Tareas</h3>
+            <div class="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-3">
+                <div class="text-center">
+                    <p id="completedTasksCount" class="text-4xl font-bold text-green-600">0</p>
+                    <p class="mt-1 text-slate-500">Completadas</p>
+                </div>
+                <div class="text-center">
+                    <p id="pendingTasksCount" class="text-4xl font-bold text-amber-600">0</p>
+                    <p class="mt-1 text-slate-500">Pendientes</p>
+                </div>
+                <div class="relative mx-auto h-32 w-32">
+                    <canvas id="performanceChart"></canvas>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="performancePercentage" class="text-2xl font-bold text-slate-800">0%</span>
+                    </div>
+                </div>
+            </div>
+             <p class="mt-4 text-slate-500 text-center">Promedio de cumplimiento</p>
+        </div>
+    </div>
+</div>
+
+        <div id="admin-view">
+            <div class="mt-6 rounded-lg bg-white p-6 shadow">
+                <h3 class="text-lg font-bold text-slate-800">Resumen de Desempeño del Equipo</h3>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Usuario</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Evaluación</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Resultados Compromiso</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Cumplimiento</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Completadas</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Pendientes</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Atrasadas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-team-list" class="divide-y divide-slate-200 bg-white">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>
