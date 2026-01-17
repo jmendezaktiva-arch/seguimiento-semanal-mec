@@ -44,6 +44,7 @@ exports.handler = async (event) => {
       assignedTo: row[2],
       dueDate: row[3],
       status: row[4],
+      hitoId: row[5]
     }));
 
     // CAMBIO: Si el scope es 'all', devolvemos todas las tareas.

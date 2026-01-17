@@ -50,7 +50,7 @@ exports.handler = async (event) => {
     // --- Lógica para CREAR una nueva tarea ---
     if (data.action === 'create') {
       console.log('Acción detectada: create');
-      const { description, dueDate, assignedTo } = data;
+      const { description, dueDate, assignedTo, hitoId } = data;
       const newTaskId = Date.now().toString();
       const newRow = [newTaskId, description, assignedTo, dueDate, 'Pendiente'];
       console.log('Creando nueva fila:', newRow);
