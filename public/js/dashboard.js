@@ -242,3 +242,52 @@ const renderDoughnutChart = (canvasElement, completed, pending, color) => {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } } } 
     });
 };
+
+// Lógica para cargar responsables en el formulario de Hitos
+const loadUsersForHitos = async () => {
+    const selector = document.getElementById('hito-responsable');
+    if (!selector) return;
+    try {
+        const response = await fetch('/.netlify/functions/getUsers');
+        const users = await response.json();
+        selector.innerHTML = '<option value="">Selecciona responsable</option>';
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.email;
+            option.textContent = user.email;
+            selector.appendChild(option);
+        });
+    } catch (e) { console.error("Error cargando usuarios:", e); }
+};
+
+// Listener para el formulario de nuevo hito
+document.getElementById('add-hito-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    const nombre = document.getElementById('hito-nombre').value;
+    const responsable = document.getElementById('hito-responsable').value;
+    const fechaFin = document.getElementById('hito-fecha-fin').value;
+
+    btn.disabled = true;
+    btn.textContent = 'Determinando...';
+
+    try {
+        await fetch('/.netlify/functions/updateCronograma', {
+            method: 'POST',
+            body: JSON.stringify({ nombre, responsable, fechaFin })
+        });
+        e.target.reset();
+        alert('Estrategia actualizada: Nuevo hito determinado.');
+        loadAdminDashboard(localStorage.getItem('userEmail')); // Refrescar vista
+    } catch (err) {
+        alert('Error al guardar hito estratégico.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Determinar Hito';
+    }
+});
+
+// Llamamos a la carga de usuarios si es admin
+if (localStorage.getItem('userRole') === 'Admin') {
+    loadUsersForHitos();
+}
