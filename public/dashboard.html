@@ -11,6 +11,18 @@
         #user-view, #admin-view { display: none; }
         * { transition: all 0.2s ease-in-out; }
         .custom-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .grid-cols-13 {
+            display: grid;
+            grid-template-columns: 160px repeat(12, 1fr);
+            /* Scrollbar estético para el Gantt */
+        .overflow-x-auto::-webkit-scrollbar {
+            height: 6px;
+        }
+        .overflow-x-auto::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        }
     </style>
 </head>
 <body class="bg-slate-100">
@@ -59,9 +71,14 @@
             </div>
 
             <div class="rounded-lg bg-white p-6 custom-shadow border-t-4 border-blue-600">
-                <h3 class="text-lg font-bold text-slate-800 mb-4">Seguimiento de Cronograma</h3>
-                <div id="admin-hitos-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <p class="text-slate-500">Sincronizando estrategia...</p>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-slate-800">Cronograma Estratégico de Implementación</h3>
+                    <span class="text-xs text-slate-400 italic">Visualización por meses</span>
+                </div>
+                
+                <div class="overflow-x-auto border rounded-lg">
+                    <div id="gantt-chart" class="min-w-[800px] bg-white">
+                        </div>
                 </div>
             </div>
 
@@ -87,6 +104,32 @@
         </div>
 
         <div id="user-view">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+    <div class="rounded-lg bg-white p-6 custom-shadow border-t-4 border-blue-500">
+        <h3 class="font-bold text-slate-800 mb-2">Mi Compromiso Semanal</h3>
+        <div id="user-results-container" class="text-slate-600 italic">Cargando...</div>
+        </div>
+
+        <div class="rounded-lg bg-white p-6 custom-shadow md:col-span-2 border-t-4 border-green-500">
+            <h3 class="font-bold text-slate-800 mb-4 text-center sm:text-left">Mi Cumplimiento de Tareas</h3>
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-3 items-center">
+                <div class="text-center">
+                    <p id="completedTasksCount" class="text-4xl font-bold text-green-600">0</p>
+                    <p class="text-xs text-slate-500 uppercase tracking-widest mt-1">Hechas</p>
+                </div>
+                <div class="text-center">
+                    <p id="pendingTasksCount" class="text-4xl font-bold text-amber-600">0</p>
+                    <p class="text-xs text-slate-500 uppercase tracking-widest mt-1">Pendientes</p>
+                </div>
+                <div class="relative mx-auto h-28 w-28">
+                    <canvas id="performanceChart"></canvas>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="performancePercentage" class="text-xl font-bold text-slate-800">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
             </div>
 
     </main>

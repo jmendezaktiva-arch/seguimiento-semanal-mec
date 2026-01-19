@@ -39,7 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // ############### DIMENSIÓN ESTRATÉGICA Y EQUIPO (ADMIN) ###############
 const loadAdminDashboard = async (userEmail) => {
   const teamListBody = document.getElementById('admin-team-list');
-  const hitosContainer = document.getElementById('admin-hitos-container');
+  const ganttContainer = document.getElementById('gantt-chart');
+    ganttContainer.innerHTML = '';
   const weekId = getCurrentWeekId();
 
   try {
@@ -61,32 +62,52 @@ const loadAdminDashboard = async (userEmail) => {
     const allHitos = await hitosResponse.json();
 
     // 1. RENDERIZAR CRONOGRAMA (NIVEL 1)
-    hitosContainer.innerHTML = '';
+    // --- NUEVA LÓGICA DE RENDERIZADO TIPO GANTT ---
+    const ganttContainer = document.getElementById('gantt-chart');
+    ganttContainer.innerHTML = '';
+
     if (allHitos.length === 0) {
-        hitosContainer.innerHTML = '<p class="text-slate-500 text-sm">No hay hitos estratégicos definidos.</p>';
+        ganttContainer.innerHTML = '<p class="p-4 text-slate-500 text-sm">No hay hitos definidos.</p>';
     } else {
+        const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        
+        // 1. Crear Cabecera de Meses
+        const header = document.createElement('div');
+        header.className = 'grid grid-cols-13 border-b bg-slate-50 font-bold text-[10px] text-slate-500 uppercase tracking-tighter';
+        header.innerHTML = `<div class="p-2 border-r w-40 bg-slate-100">Hito / Mes</div>` + 
+                           meses.map(m => `<div class="p-2 text-center border-r">${m}</div>`).join('');
+        ganttContainer.appendChild(header);
+
+        // 2. Pintar cada Hito
         allHitos.forEach(hito => {
             const hitoTasks = allTasks.filter(t => t.hitoId === hito.id);
-            const total = hitoTasks.length;
-            const completed = hitoTasks.filter(t => t.status === 'Cumplida').length;
-            const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+            const progress = hitoTasks.length > 0 ? Math.round((hitoTasks.filter(t => t.status === 'Cumplida').length / hitoTasks.length) * 100) : 0;
 
-            const card = document.createElement('div');
-            card.className = 'border rounded-lg p-4 bg-slate-50 shadow-sm';
-            card.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <h4 class="font-bold text-slate-800 text-sm">${hito.nombre}</h4>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700">${hito.id}</span>
-                </div>
-                <div class="w-full bg-slate-200 rounded-full h-1.5 mb-2">
-                    <div class="bg-blue-600 h-1.5 rounded-full" style="width: ${progress}%"></div>
-                </div>
-                <div class="flex justify-between items-center text-[10px]">
-                    <span class="font-bold text-slate-600">${progress}% completado</span>
-                    <span class="text-slate-400">Responsable: ${hito.responsable || 'N/A'}</span>
-                </div>
-            `;
-            hitosContainer.appendChild(card);
+            const startMonth = parseDate(hito.fechaInicio)?.getMonth() + 1 || 1;
+            const endMonth = parseDate(hito.fechaFin)?.getMonth() + 1 || startMonth;
+            
+            const row = document.createElement('div');
+            row.className = 'grid grid-cols-13 border-b hover:bg-slate-50 relative h-12 items-center';
+            
+            let rowHtml = `<div class="p-2 border-r w-40 text-[11px] font-bold text-slate-700 truncate" title="${hito.nombre}">${hito.nombre}</div>`;
+            
+            for(let i=1; i<=12; i++) {
+                rowHtml += `<div class="border-r h-full"></div>`;
+            }
+            
+            const colStart = startMonth + 1;
+            const colSpan = (endMonth - startMonth) + 1;
+            
+            rowHtml += `
+                <div class="absolute h-6 rounded-full shadow-sm flex items-center px-2 text-[9px] font-bold text-white transition-all overflow-hidden" 
+                     style="grid-column: ${colStart} / span ${colSpan}; 
+                            background: linear-gradient(90deg, #2563eb ${progress}%, #94a3b8 ${progress}%);
+                            margin-left: 4px; margin-right: 4px;">
+                    ${progress}%
+                </div>`;
+                
+            row.innerHTML = rowHtml;
+            ganttContainer.appendChild(row);
         });
     }
 
