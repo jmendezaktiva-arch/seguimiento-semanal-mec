@@ -1,5 +1,4 @@
 // netlify/functions/getTasks.js
-
 const { google } = require('googleapis');
 
 const auth = new google.auth.GoogleAuth({
@@ -16,26 +15,17 @@ const sheetName = 'Tareas';
 
 exports.handler = async (event) => {
   const userEmail = event.queryStringParameters.email;
-  // CAMBIO: Nuevo parámetro para saber si queremos todas las tareas
-  const scope = event.queryStringParameters.scope || 'user'; // 'user' o 'all'
-
-  if (!userEmail) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: 'El email del usuario es requerido.' }),
-    };
-  }
+  const scope = event.queryStringParameters.scope || 'user';
 
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!A:E`,
+      // CORRECCIÓN: Cambiado de A:E a A:F para incluir el ID del Hito
+      range: `${sheetName}!A:F`, 
     });
 
     const rows = response.data.values;
-    if (!rows || rows.length <= 1) {
-      return { statusCode: 200, body: JSON.stringify([]) };
-    }
+    if (!rows || rows.length <= 1) return { statusCode: 200, body: JSON.stringify([]) };
 
     const allTasks = rows.slice(1).map((row, index) => ({
       rowNumber: index + 2,
@@ -44,29 +34,17 @@ exports.handler = async (event) => {
       assignedTo: row[2],
       dueDate: row[3],
       status: row[4],
-      hitoId: row[5]
+      // CORRECCIÓN: Ahora mapeamos la sexta columna (F)
+      hitoId: row[5] || '' 
     }));
 
-    // CAMBIO: Si el scope es 'all', devolvemos todas las tareas.
-    // Si no, filtramos por el email del usuario como antes.
     if (scope === 'all') {
-      return {
-        statusCode: 200,
-        body: JSON.stringify(allTasks),
-      };
+      return { statusCode: 200, body: JSON.stringify(allTasks) };
     } else {
       const userTasks = allTasks.filter(task => task.assignedTo && task.assignedTo.toLowerCase() === userEmail.toLowerCase());
-      return {
-        statusCode: 200,
-        body: JSON.stringify(userTasks),
-      };
+      return { statusCode: 200, body: JSON.stringify(userTasks) };
     }
-
   } catch (error) {
-    console.error('Error al leer las tareas:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'No se pudieron obtener las tareas.' }),
-    };
+    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
   }
 };
