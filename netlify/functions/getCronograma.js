@@ -14,10 +14,15 @@ const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 exports.handler = async (event) => {
   const userEmail = event.queryStringParameters.email;
 
+  // Capturamos parámetros necesarios para la lógica de seguridad y visualización
+  const userRole = event.queryStringParameters.role || 'Usuario';
+  const scope = event.queryStringParameters.scope || 'user';
+
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Cronograma!A:F', // ID, Nombre, Responsable, Inicio, Fin, Estado
+      // AMPLIADO: Rango A:H para capturar Área (G) y Proyecto (H)
+      range: 'Cronograma!A:H', 
     });
 
     const rows = response.data.values;
@@ -29,15 +34,29 @@ exports.handler = async (event) => {
       responsable: row[2],
       fechaInicio: row[3],
       fechaFin: row[4],
-      estado: row[5]
+      estado: row[5],
+      area: row[6] || '',
+      // NUEVO: Mapeo de la octava columna (H) para la jerarquía estratégica
+      proyecto: row[7] || ''
     }));
 
-    // Si pasamos un email, filtramos solo lo que le toca a esa persona
-    const filteredHitos = userEmail 
-      ? allHitos.filter(h => h.responsable && h.responsable.toLowerCase() === userEmail.toLowerCase())
-      : allHitos;
+    let filteredHitos;
 
-    return { statusCode: 200, body: JSON.stringify(filteredHitos) };
+    // ADUANA DE SEGURIDAD: 
+    // Si es Admin y pide todo, entregamos todo.
+    // En cualquier otro caso, filtramos estrictamente por el email del responsable.
+    if (userRole === 'Admin' && scope === 'all') {
+      filteredHitos = allHitos;
+    } else {
+      filteredHitos = allHitos.filter(h => 
+        h.responsable && h.responsable.toLowerCase() === (userEmail ? userEmail.toLowerCase() : '')
+      );
+    }
+
+    return { 
+      statusCode: 200, 
+      body: JSON.stringify(filteredHitos) 
+    };
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
   }

@@ -43,12 +43,16 @@ const loadAdminDashboard = async (userEmail) => {
   const ganttContainer = document.getElementById('gantt-chart');
   const weekId = getCurrentWeekId();
 
+  // Recuperamos el rol para la "Aduana de Seguridad" del backend
+  const userRole = localStorage.getItem('userRole');
+
   try {
     const [tasksResponse, resultsResponse, usersResponse, hitosResponse] = await Promise.all([
-        fetch(`/.netlify/functions/getTasks?email=${userEmail}&scope=all`),
-        fetch(`/.netlify/functions/getResultados?email=${userEmail}&scope=all&weekId=${weekId}`),
+        fetch(`/.netlify/functions/getTasks?email=${userEmail}&scope=all&role=${userRole}`),
+        fetch(`/.netlify/functions/getResultados?email=${userEmail}&scope=all&weekId=${weekId}&role=${userRole}`),
         fetch(`/.netlify/functions/getUsers`),
-        fetch(`/.netlify/functions/getCronograma`)
+        // ACTUALIZADO: Enviamos email, scope y role para que el Admin vea todo el cronograma
+        fetch(`/.netlify/functions/getCronograma?email=${userEmail}&scope=all&role=${userRole}`)
     ]);
 
     if (!tasksResponse.ok || !resultsResponse.ok || !usersResponse.ok || !hitosResponse.ok) {
@@ -67,74 +71,116 @@ const loadAdminDashboard = async (userEmail) => {
         ganttContainer.innerHTML = '<p class="p-4 text-slate-500 text-sm italic">No hay hitos estratégicos definidos.</p>';
     } else {
         const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-        
         const header = document.createElement('div');
-        header.className = 'grid grid-cols-13 border-b bg-slate-50 font-bold text-[10px] text-slate-500 uppercase tracking-tighter';
-        header.innerHTML = `<div class="p-2 border-r w-40 bg-slate-100">Hito / Mes</div>` + 
+        header.className = 'grid grid-cols-13 border-b bg-slate-50 font-bold text-[10px] text-slate-500 uppercase tracking-tighter sticky top-0 z-20';
+        header.innerHTML = `<div class="p-2 border-r w-40 bg-slate-100">Jerarquía / Mes</div>` + 
                            meses.map(m => `<div class="p-2 text-center border-r">${m}</div>`).join('');
         ganttContainer.appendChild(header);
 
-        allHitos.forEach(hito => {
-            const hitoTasks = allTasks.filter(t => t.hitoId === hito.id);
-            const progress = hitoTasks.length > 0 ? Math.round((hitoTasks.filter(t => t.status === 'Cumplida').length / hitoTasks.length) * 100) : 0;
+        // AGRUPACIÓN JERÁRQUICA: Área > Proyecto
+        const hierarchy = allHitos.reduce((acc, hito) => {
+            const area = hito.area || 'Sin Área';
+            const proyecto = hito.proyecto || 'Proyecto General';
+            if (!acc[area]) acc[area] = {};
+            if (!acc[area][proyecto]) acc[area][proyecto] = [];
+            acc[area][proyecto].push(hito);
+            return acc;
+        }, {});
 
-            const startMonth = parseDate(hito.fechaInicio)?.getMonth() + 1 || 1;
-            const endMonth = parseDate(hito.fechaFin)?.getMonth() + 1 || startMonth;
-            
-            const row = document.createElement('div');
-            row.className = 'grid grid-cols-13 border-b hover:bg-slate-50 relative h-12 items-center';
-            
-            let rowHtml = `<div class="p-2 border-r w-40 text-[11px] font-bold text-slate-700 truncate" title="${hito.nombre}">${hito.nombre}</div>`;
-            for(let i=1; i<=12; i++) { rowHtml += `<div class="border-r h-full"></div>`; }
-            
-            const colStart = startMonth + 1;
-            const colSpan = (endMonth - startMonth) + 1;
-            
-            rowHtml += `
-                <div class="absolute h-6 rounded-full shadow-sm flex items-center px-2 text-[9px] font-bold text-white transition-all overflow-hidden" 
-                     style="grid-column: ${colStart} / span ${colSpan}; 
-                            background: linear-gradient(90deg, #2563eb ${progress}%, #94a3b8 ${progress}%);
-                            margin-left: 4px; margin-right: 4px;">
-                    ${progress}%
-                </div>`;
-                
-            row.innerHTML = rowHtml;
-            ganttContainer.appendChild(row);
+        Object.keys(hierarchy).forEach(area => {
+            // Fila de Encabezado de ÁREA
+            const areaRow = document.createElement('div');
+            areaRow.className = 'grid grid-cols-13 bg-slate-200 border-b font-bold text-[11px] text-slate-800 uppercase italic';
+            areaRow.innerHTML = `<div class="p-2 border-r w-40 truncate">📍 Área: ${area}</div>` + Array(12).fill('<div class="border-r h-full"></div>').join('');
+            ganttContainer.appendChild(areaRow);
+
+            Object.keys(hierarchy[area]).forEach(proyecto => {
+                // Fila de Encabezado de PROYECTO
+                const projectRow = document.createElement('div');
+                projectRow.className = 'grid grid-cols-13 bg-slate-50 border-b font-semibold text-[10px] text-blue-700';
+                projectRow.innerHTML = `<div class="p-2 pl-4 border-r w-40 truncate">📁 ${proyecto}</div>` + Array(12).fill('<div class="border-r h-full"></div>').join('');
+                ganttContainer.appendChild(projectRow);
+
+                hierarchy[area][proyecto].forEach(hito => {
+                    const hitoTasks = allTasks.filter(t => t.hitoId === hito.id);
+                    const progress = hitoTasks.length > 0 ? Math.round((hitoTasks.filter(t => t.status === 'Cumplida').length / hitoTasks.length) * 100) : 0;
+                    const startMonth = parseDate(hito.fechaInicio)?.getMonth() + 1 || 1;
+                    const endMonth = parseDate(hito.fechaFin)?.getMonth() + 1 || startMonth;
+                    
+                    const row = document.createElement('div');
+                    row.className = 'grid grid-cols-13 border-b hover:bg-slate-50 relative h-10 items-center group';
+                    let rowHtml = `<div class="p-2 pl-6 border-r w-40 text-[10px] text-slate-600 truncate italic" title="${hito.nombre}">${hito.nombre}</div>`;
+                    for(let i=1; i<=12; i++) { rowHtml += `<div class="border-r h-full"></div>`; }
+                    
+                    const colStart = startMonth + 1;
+                    const colSpan = Math.max(1, (endMonth - startMonth) + 1);
+                    
+                    rowHtml += `
+                        <div class="absolute h-5 rounded-full shadow-sm flex items-center px-2 text-[8px] font-bold text-white transition-all overflow-hidden" 
+                             style="grid-column: ${colStart} / span ${colSpan}; 
+                                    background: linear-gradient(90deg, #3b82f6 ${progress}%, #cbd5e1 ${progress}%);
+                                    margin-left: 4px; margin-right: 4px;">
+                            ${progress}%
+                        </div>`;
+                    row.innerHTML = rowHtml;
+                    ganttContainer.appendChild(row);
+                });
+            });
         });
     }
 
-    // 2. RENDERIZAR TABLA DE EQUIPO (NIVEL 2 Y 3)
-    const dataByUser = {};
-    allUsers.forEach(user => { if(user.email) dataByUser[user.email] = { tasks: [], results: [] }; });
-    allTasks.forEach(task => { if (dataByUser[task.assignedTo]) dataByUser[task.assignedTo].tasks.push(task); });
-    allResults.forEach(result => { if (dataByUser[result.assignedTo]) dataByUser[result.assignedTo].results.push(result); });
+    // 2. RENDERIZAR TABLA DE EQUIPO POR ÁREA (JERARQUÍA ESTRATÉGICA)
+    const usersByArea = {};
+    
+    // Agrupamos usuarios por área (asumiendo que el objeto user tiene una propiedad area)
+    allUsers.forEach(user => {
+        const area = user.area || 'General';
+        if (!usersByArea[area]) usersByArea[area] = [];
+        usersByArea[area].push(user);
+    });
 
     teamListBody.innerHTML = '';
-    for (const email in dataByUser) {
-        const { tasks, results } = dataByUser[email];
-        const result = results.length > 0 ? results[0] : null;
-        const resultadoTexto = results.map(r => r.expectedResult).join('<br>') || '<em>Sin compromiso</em>';
 
-        const completed = tasks.filter(t => t.status === 'Cumplida').length;
-        const today = new Date(); today.setHours(0,0,0,0);
-        const overdue = tasks.filter(t => t.status === 'Pendiente' && parseDate(t.dueDate) < today).length;
-        const percentage = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
-    
-        let colorClass = percentage >= 80 ? 'text-green-600' : (percentage >= 60 ? 'text-yellow-600' : 'text-red-600');
-        const evaluationCellHtml = createEvaluationCell(result, email, weekId);
+    Object.keys(usersByArea).sort().forEach(area => {
+        // FILA DE ENCABEZADO DE ÁREA
+        const areaRow = document.createElement('tr');
+        areaRow.className = 'bg-slate-100 border-y-2 border-slate-200';
+        areaRow.innerHTML = `
+            <td colspan="7" class="px-6 py-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                📍 ÁREA: ${area}
+            </td>`;
+        teamListBody.appendChild(areaRow);
 
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td class="px-6 py-4 text-sm font-medium text-slate-900">${email}</td>
-            <td class="px-6 py-4 text-sm">${evaluationCellHtml}</td>
-            <td class="px-6 py-4 text-sm text-slate-600 leading-relaxed">${resultadoTexto}</td>
-            <td class="px-6 py-4 text-center text-sm font-bold ${colorClass}">${percentage}%</td>
-            <td class="px-6 py-4 text-center text-sm text-green-600 font-bold">${completed}</td>
-            <td class="px-6 py-4 text-center text-sm text-slate-500">${tasks.length - completed}</td>
-            <td class="px-6 py-4 text-center text-sm font-bold text-red-500">${overdue}</td>
-        `;
-        teamListBody.appendChild(row);
-    }
+        usersByArea[area].forEach(user => {
+            const email = user.email;
+            const tasks = allTasks.filter(t => t.assignedTo === email);
+            const results = allResults.filter(r => r.assignedTo === email);
+            
+            const result = results.length > 0 ? results[0] : null;
+            const resultadoTexto = results.map(r => r.expectedResult).join('<br>') || '<em>Sin compromiso</em>';
+
+            const completed = tasks.filter(t => t.status === 'Cumplida').length;
+            const today = new Date(); today.setHours(0,0,0,0);
+            const overdue = tasks.filter(t => t.status === 'Pendiente' && parseDate(t.dueDate) < today).length;
+            const percentage = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
+        
+            let colorClass = percentage >= 80 ? 'text-green-600' : (percentage >= 60 ? 'text-yellow-600' : 'text-red-600');
+            const evaluationCellHtml = createEvaluationCell(result, email, weekId);
+
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-slate-50 transition-colors border-b border-slate-100';
+            row.innerHTML = `
+                <td class="px-6 py-4 text-sm font-medium text-slate-900 pl-10">${email}</td>
+                <td class="px-6 py-4 text-sm text-center">${evaluationCellHtml}</td>
+                <td class="px-6 py-4 text-sm text-slate-600 leading-tight">${resultadoTexto}</td>
+                <td class="px-6 py-4 text-center text-sm font-bold ${colorClass}">${percentage}%</td>
+                <td class="px-6 py-4 text-center text-sm text-green-600 font-bold">${completed}</td>
+                <td class="px-6 py-4 text-center text-sm text-slate-400">${tasks.length - completed}</td>
+                <td class="px-6 py-4 text-center text-sm font-bold text-red-500">${overdue}</td>
+            `;
+            teamListBody.appendChild(row);
+        });
+    });
 
   } catch (error) {
     console.error("Fallo crítico en Dashboard Admin:", error);

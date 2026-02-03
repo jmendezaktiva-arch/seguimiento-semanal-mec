@@ -31,22 +31,78 @@ exports.handler = async (event) => {
     }
 
     if (data.action === 'create') {
-      const { description, dueDate, assignedTo, hitoId } = data;
+      // EXTRAEMOS LOS NUEVOS CAMPOS: area, proyecto y asignadoPor
+      const { description, dueDate, assignedTo, hitoId, area, proyecto, asignadoPor } = data;
       const newTaskId = Date.now().toString();
       
-      // CORRECCIÓN: Incluimos hitoId en la sexta posición para que se guarde en la Columna F
-      const newRow = [newTaskId, description, assignedTo, dueDate, 'Pendiente', hitoId || ''];
+      // AMPLIACIÓN: La fila ahora tiene 9 columnas (A hasta I)
+      const newRow = [
+        newTaskId,      // A: ID
+        description,    // B: Descripción
+        assignedTo,     // C: Responsable
+        dueDate,        // D: Fecha Entrega
+        'Pendiente',    // E: Estatus
+        hitoId || '',   // F: ID Hito
+        area || '',     // G: Área
+        proyecto || '', // H: Proyecto
+        asignadoPor || '' // I: Quién asignó la tarea
+      ];
 
       await sheets.spreadsheets.values.append({
         spreadsheetId,
-        // CORRECCIÓN: Cambiado de A:E a A:F
-        range: `${sheetName}!A:F`, 
+        // ACTUALIZADO: El rango ahora llega hasta la columna I
+        range: `${sheetName}!A:I`, 
         valueInputOption: 'USER_ENTERED',
         insertDataOption: 'INSERT_ROWS',
         resource: { values: [newRow] },
       });
 
-      return { statusCode: 201, body: JSON.stringify({ message: 'Tarea creada' }) };
+      // --- INICIO DISPARO DE NOTIFICACIÓN ---
+      try {
+        // Llamada asíncrona a la función de notificación (No bloqueamos la respuesta al usuario)
+        // Usamos la URL local o de producción según corresponda
+        const protocol = event.headers.host.includes('localhost') ? 'http' : 'https';
+        const notificationUrl = `${protocol}://${event.headers.host}/.netlify/functions/sendNotification`;
+        
+        fetch(notificationUrl, {
+          method: 'POST',
+          body: JSON.stringify({ description, dueDate, assignedTo, asignadoPor, area, proyecto })
+        }).catch(err => console.error("Error silencioso en notificación:", err));
+        
+      } catch (notifError) {
+        console.error("Fallo al intentar disparar notificación:", notifError);
+      }
+      // --- FIN DISPARO DE NOTIFICACIÓN ---
+
+      return { statusCode: 201, body: JSON.stringify({ message: 'Tarea creada y notificada' }) };
+
+      return { statusCode: 201, body: JSON.stringify({ message: 'Tarea creada con éxito' }) };
+    }
+
+    if (data.action === 'updateFull') {
+      const { rowNumber, description, assignedTo, dueDate, status, hitoId, area, proyecto, asignadoPor } = data;
+      
+      // Creamos el array con los datos que corresponden a las columnas B hasta la I
+      const updatedValues = [
+        description,    // B: Descripción
+        assignedTo,     // C: Responsable
+        dueDate,        // D: Fecha Entrega
+        status,         // E: Estatus
+        hitoId || '',   // F: ID Hito
+        area || '',     // G: Área
+        proyecto || '', // H: Proyecto
+        asignadoPor || '' // I: Quién asignó
+      ];
+
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        // Actualizamos desde la B hasta la I para no sobreescribir el ID único de la columna A
+        range: `${sheetName}!B${rowNumber}:I${rowNumber}`,
+        valueInputOption: 'USER_ENTERED',
+        resource: { values: [updatedValues] },
+      });
+
+      return { statusCode: 200, body: JSON.stringify({ message: 'Tarea modificada íntegramente' }) };
     }
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
