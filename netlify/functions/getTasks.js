@@ -20,8 +20,8 @@ exports.handler = async (event) => {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      // CORRECCIÓN: Cambiado de A:E a A:F para incluir el ID del Hito
-      range: `${sheetName}!A:F`, 
+      // SE EXTIENDE EL RANGO: De A:F a A:I para incluir Área, Proyecto y AsignadoPor
+      range: `${sheetName}!A:I`, 
     });
 
     const rows = response.data.values;
@@ -34,8 +34,10 @@ exports.handler = async (event) => {
       assignedTo: row[2],
       dueDate: row[3],
       status: row[4],
-      // CORRECCIÓN: Ahora mapeamos la sexta columna (F)
-      hitoId: row[5] || '' 
+      hitoId: row[5] || '',
+      area: row[6] || '',
+      proyecto: row[7] || '',
+      asignadoPor: row[8] || ''
     }));
 
     if (scope === 'all') {
