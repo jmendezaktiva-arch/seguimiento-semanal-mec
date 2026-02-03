@@ -40,12 +40,25 @@ exports.handler = async (event) => {
       asignadoPor: row[8] || ''
     }));
 
-    if (scope === 'all') {
-      return { statusCode: 200, body: JSON.stringify(allTasks) };
+    // Capturamos el rol desde los parámetros (por defecto es 'Usuario' para mayor seguridad)
+    const userRole = event.queryStringParameters.role || 'Usuario';
+
+    let filteredTasks;
+
+    // REGLA DE NEGOCIO: Solo un Admin con el scope 'all' puede ver todo.
+    if (userRole === 'Admin' && scope === 'all') {
+      filteredTasks = allTasks;
     } else {
-      const userTasks = allTasks.filter(task => task.assignedTo && task.assignedTo.toLowerCase() === userEmail.toLowerCase());
-      return { statusCode: 200, body: JSON.stringify(userTasks) };
+      // En cualquier otro caso (es Usuario o el Admin quiere ver solo lo suyo), filtramos por email.
+      filteredTasks = allTasks.filter(t => 
+        t.assignedTo && t.assignedTo.toLowerCase() === (userEmail ? userEmail.toLowerCase() : '')
+      );
     }
+
+    return { 
+      statusCode: 200, 
+      body: JSON.stringify(filteredTasks) 
+    };
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
   }

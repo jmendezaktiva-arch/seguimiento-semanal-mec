@@ -44,15 +44,25 @@ exports.handler = async (event) => {
 
     const weekResults = results.filter(r => r.weekId === weekId);
 
-    if (scope === 'all') {
-      return { statusCode: 200, body: JSON.stringify(weekResults) };
+    // Capturamos el rol para validar permisos de acceso
+    const userRole = event.queryStringParameters.role || 'Usuario';
+
+    let filteredResults;
+
+    // REGLA DE SEGURIDAD: Solo Admins pueden ver los resultados de todo el equipo
+    if (userRole === 'Admin' && scope === 'all') {
+      filteredResults = weekResults;
     } else {
-      // ---- INICIO DE LA CORRECCIÓN ----
-      // Usamos .filter() en lugar de .find() para que la respuesta SIEMPRE sea un array.
-      const userResults = weekResults.filter(r => r.assignedTo && r.assignedTo.toLowerCase() === email.toLowerCase());
-      return { statusCode: 200, body: JSON.stringify(userResults) };
-      // ---- FIN DE LA CORRECCIÓN ----
+      // Los usuarios (o Admins en vista personal) solo ven sus propios compromisos
+      filteredResults = weekResults.filter(r => 
+        r.assignedTo && r.assignedTo.toLowerCase() === (email ? email.toLowerCase() : '')
+      );
     }
+
+    return { 
+      statusCode: 200, 
+      body: JSON.stringify(filteredResults) 
+    };
 
   } catch (error) {
     console.error('Error al leer los resultados:', error);
