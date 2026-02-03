@@ -10,7 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "googleapis": "^123.0.0"
+    "googleapis": "^123.0.0",
+    "nodemailer": "^7.0.13"
   },
   "devDependencies": {
     "netlify-cli": "^17.0.0"
