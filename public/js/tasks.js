@@ -304,12 +304,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (error) { console.error('Error al actualizar:', error); }
             }
 
-            // RESTAURADO: Desplegar y ocultar tareas por mes al hacer clic en H3
-            if (event.target.tagName === 'H3') {
-                const month = event.target.textContent;
-                const monthId = `tasks-${month.replace(/[^a-zA-Z0-9]/g, '-')}`;
-                const container = document.getElementById(monthId);
-                if (container) {
+            // MEJORA QUIRÚRGICA: Toggle de meses sensible a clics en el encabezado completo
+            const monthHeader = event.target.closest('h3');
+            if (monthHeader && taskListContainer.contains(monthHeader)) {
+                // Buscamos el contenedor de tareas que está inmediatamente después del encabezado
+                const container = monthHeader.nextElementSibling;
+                if (container && container.id.startsWith('tasks-')) {
                     container.style.display = container.style.display === 'none' ? 'block' : 'none';
                 }
             }
