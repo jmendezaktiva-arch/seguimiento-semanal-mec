@@ -146,53 +146,57 @@ const loadAdminDashboard = async (userEmail) => {
         const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
         const header = document.createElement('div');
         header.className = 'grid grid-cols-13 border-b bg-slate-50 font-bold text-[10px] text-slate-500 uppercase tracking-tighter sticky top-0 z-20';
-        header.innerHTML = `<div class="p-2 border-r w-40 bg-slate-100">Jerarquía / Mes</div>` + 
-                           meses.map(m => `<div class="p-2 text-center border-r">${m}</div>`).join('');
+        // CAMBIO: w-40 (160px) por w-60 (240px) para coincidir con el nuevo CSS
+        header.innerHTML = `<div class="p-2 border-r w-60 bg-slate-100 shrink-0">Jerarquía / Mes</div>` + 
+                           meses.map(m => `<div class="p-2 text-center border-r min-w-[40px]">${m}</div>`).join('');
         ganttContainer.appendChild(header);
 
-        // AGRUPACIÓN JERÁRQUICA (Normalización Quirúrgica): Área > Proyecto
+        // AGRUPACIÓN JERÁRQUICA
         const hierarchy = allHitos.reduce((acc, hito) => {
-            // Limpiamos espacios y estandarizamos para evitar duplicidad por errores de dedo
             const area = (hito.area || '').trim() || 'Sin Área';
             const proyecto = (hito.proyecto || '').trim() || 'Proyecto General';
-            
             if (!acc[area]) acc[area] = {};
             if (!acc[area][proyecto]) acc[area][proyecto] = [];
-            
             acc[area][proyecto].push(hito);
             return acc;
         }, {});
 
         Object.keys(hierarchy).forEach(area => {
-            // Fila de Encabezado de ÁREA
             const areaRow = document.createElement('div');
             areaRow.className = 'grid grid-cols-13 bg-slate-200 border-b font-bold text-[11px] text-slate-800 uppercase italic';
-            areaRow.innerHTML = `<div class="p-2 border-r w-40 truncate">📍 Área: ${area}</div>` + Array(12).fill('<div class="border-r h-full"></div>').join('');
+            areaRow.innerHTML = `<div class="p-2 border-r w-60 truncate shrink-0">📍 Área: ${area}</div>` + Array(12).fill('<div class="border-r h-full"></div>').join('');
             ganttContainer.appendChild(areaRow);
 
             Object.keys(hierarchy[area]).forEach(proyecto => {
-                // Fila de Encabezado de PROYECTO
                 const projectRow = document.createElement('div');
                 projectRow.className = 'grid grid-cols-13 bg-slate-50 border-b font-semibold text-[10px] text-blue-700';
-                projectRow.innerHTML = `<div class="p-2 pl-4 border-r w-40 truncate">📁 ${proyecto}</div>` + Array(12).fill('<div class="border-r h-full"></div>').join('');
+                projectRow.innerHTML = `<div class="p-2 pl-4 border-r w-60 truncate shrink-0">📁 ${proyecto}</div>` + Array(12).fill('<div class="border-r h-full"></div>').join('');
                 ganttContainer.appendChild(projectRow);
 
                 hierarchy[area][proyecto].forEach(hito => {
                     const hitoTasks = allTasks.filter(t => t.hitoId === hito.id);
                     const progress = hitoTasks.length > 0 ? Math.round((hitoTasks.filter(t => t.status === 'Cumplida').length / hitoTasks.length) * 100) : 0;
-                    const startMonth = parseDate(hito.fechaInicio)?.getMonth() + 1 || 1;
-                    const endMonth = parseDate(hito.fechaFin)?.getMonth() + 1 || startMonth;
+                    
+                    // RECALIBRACIÓN QUIRÚRGICA: Precisión de Meses
+                    const dStart = parseDate(hito.fechaInicio);
+                    const dEnd = parseDate(hito.fechaFin);
+                    
+                    const startMonth = dStart ? dStart.getMonth() + 1 : 1;
+                    const endMonth = dEnd ? dEnd.getMonth() + 1 : startMonth;
                     
                     const row = document.createElement('div');
                     row.className = 'grid grid-cols-13 border-b hover:bg-slate-50 relative h-10 items-center group';
-                    let rowHtml = `<div class="p-2 pl-6 border-r w-40 text-[10px] text-slate-600 truncate italic" title="${hito.nombre}">${hito.nombre}</div>`;
+                    
+                    // CAMBIO: w-60 (240px) y quitamos 'truncate' agresivo para que el nombre respire
+                    let rowHtml = `<div class="p-2 pl-6 border-r w-60 text-[10px] text-slate-600 truncate italic shrink-0" title="${hito.nombre}">${hito.nombre}</div>`;
                     for(let i=1; i<=12; i++) { rowHtml += `<div class="border-r h-full"></div>`; }
                     
+                    // Cálculo de columnas (Col 1 es el label, Col 2 es Enero...)
                     const colStart = startMonth + 1;
                     const colSpan = Math.max(1, (endMonth - startMonth) + 1);
                     
                     rowHtml += `
-                        <div class="absolute h-5 rounded-full shadow-sm flex items-center px-2 text-[8px] font-bold text-white transition-all overflow-hidden" 
+                        <div class="absolute h-5 rounded-full shadow-sm flex items-center px-2 text-[8px] font-bold text-white transition-all overflow-hidden z-10" 
                              style="grid-column: ${colStart} / span ${colSpan}; 
                                     background: linear-gradient(90deg, #3b82f6 ${progress}%, #cbd5e1 ${progress}%);
                                     margin-left: 4px; margin-right: 4px;">
