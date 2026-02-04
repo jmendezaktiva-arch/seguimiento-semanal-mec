@@ -61,8 +61,17 @@ const loadAdminDashboard = async (userEmail) => {
     
     const allTasks = await tasksResponse.json();
     const allResults = await resultsResponse.json();
-    const allUsers = await usersResponse.json();
+    const usersData = await usersResponse.json();
+    const allUsers = usersData.users || [];
+    const allAreas = usersData.areas || [];
     const allHitos = await hitosResponse.json();
+
+    // MODIFICACIÓN QUIRÚRGICA: Poblar selector de áreas desde la Fuente de Verdad (Excel)
+    const projectAreaSelector = document.getElementById('project-area-selector');
+    if (projectAreaSelector) {
+        projectAreaSelector.innerHTML = '<option value="">-- Seleccionar Área --</option>' + 
+            allAreas.map(area => `<option value="${area}">${area}</option>`).join('');
+    }
 
     // 1. RENDERIZAR CRONOGRAMA TIPO GANTT (NIVEL 1)
     ganttContainer.innerHTML = '';
@@ -182,13 +191,8 @@ const loadAdminDashboard = async (userEmail) => {
         });
     });
 
-    // MODIFICACIÓN QUIRÚRGICA: Poblar selector de áreas para Proyectos
-    const projectAreaSelector = document.getElementById('project-area-selector');
-    if (projectAreaSelector) {
-        const areas = Object.keys(usersByArea).sort();
-        projectAreaSelector.innerHTML = '<option value="">-- Seleccionar Área --</option>' + 
-            areas.map(area => `<option value="${area}">${area}</option>`).join('');
-    }
+    // Nota Quirúrgica: Bloque de re-declaración eliminado. 
+    // El selector ya se pobló correctamente en la línea 53 usando la Fuente de Verdad (Excel).
 
   } catch (error) {
     console.error("Fallo crítico en Dashboard Admin:", error);
