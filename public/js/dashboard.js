@@ -64,7 +64,19 @@ const loadAdminDashboard = async (userEmail) => {
     const usersData = await usersResponse.json();
     const allUsers = usersData.users || [];
     const allAreas = usersData.areas || [];
-    const allHitos = await hitosResponse.json();
+    const rawHitos = await hitosResponse.json();
+
+    // NORMALIZACIÓN QUIRÚRGICA: Garantiza que el frontend encuentre las propiedades 
+    // sin importar si vienen como "Area", "area", "Proyecto" o "proyecto" desde el Excel.
+    const allHitos = rawHitos.map(h => ({
+        ...h,
+        id: h.id || h.ID || '',
+        area: (h.area || h.Area || '').trim(),
+        proyecto: (h.proyecto || h.Proyecto || '').trim(),
+        nombre: h.nombre || h.Nombre || '',
+        fechaInicio: h.fechaInicio || h.FechaInicio || h['Fecha Inicio'] || '',
+        fechaFin: h.fechaFin || h.FechaFin || h['Fecha Fin'] || ''
+    }));
 
     // MODIFICACIÓN QUIRÚRGICA: Poblar selector de áreas desde la Fuente de Verdad (Excel)
     const projectAreaSelector = document.getElementById('project-area-selector');
