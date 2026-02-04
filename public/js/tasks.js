@@ -251,8 +251,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const hitoId = hitoSelector ? hitoSelector.value : '';
             
+            // Extracción Quirúrgica de Metadatos: Heredamos Área y Proyecto del Hito seleccionado
+            const selectedHitoOption = hitoSelector.options[hitoSelector.selectedIndex];
+            const area = selectedHitoOption ? (selectedHitoOption.dataset.area || '') : '';
+            const proyecto = selectedHitoOption ? (selectedHitoOption.dataset.proyecto || '') : '';
+
             // DETERMINAR RESPONSABLE:
-            // Si el selector existe (Admin), tomamos su valor. Si no, usamos el email propio.
             const assigneeSelector = document.getElementById('assigned-to');
             const finalAssignedTo = (assigneeSelector && assigneeSelector.value) ? assigneeSelector.value : userEmail;
 
@@ -266,11 +270,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         action: 'create', 
                         description: descriptionInput.value, 
                         dueDate: dateInput.value, 
-                        assignedTo: finalAssignedTo, // Quién debe hacer la tarea
-                        asignadoPor: userEmail,      // Quién creó la tarea (Trazabilidad)
+                        assignedTo: finalAssignedTo, 
+                        asignadoPor: userEmail,      
                         hitoId,
-                        area: '', // Reservado para lógica de filtros avanzada
-                        proyecto: '' 
+                        area: area,     // Trazabilidad Automática
+                        proyecto: proyecto // Trazabilidad Automática
                     }),
                 });
                 addTaskForm.reset();
