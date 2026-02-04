@@ -28,33 +28,32 @@ exports.handler = async (event) => {
     const rows = response.data.values;
     if (!rows || rows.length <= 1) return { statusCode: 200, body: JSON.stringify([]) };
 
-    const headers = rows[0]; // Capturamos la primera fila (encabezados)
+    const headers = rows[0]; 
     
-    // Mapeo dinámico: Buscamos en qué posición está cada columna
-    const getIdx = (name) => headers.findIndex(h => h.toLowerCase().includes(name.toLowerCase()));
-    
-    const idx = {
-      id: getIdx('ID'),
-      nombre: getIdx('Nombre'),
-      responsable: getIdx('Responsable'),
-      inicio: getIdx('Inicio'),
-      fin: getIdx('Fin'),
-      estado: getIdx('Estado'),
-      area: getIdx('Area'),
-      proyecto: getIdx('Proyecto')
+    // ÚNICA FUENTE DE VERDAD PARA EL MAPEO
+    const findCol = (name) => headers.findIndex(h => h && h.toLowerCase().trim().includes(name.toLowerCase()));
+
+    const col = {
+      id: findCol('id'),
+      nombre: findCol('nombre'),
+      resp: findCol('responsable'),
+      ini: findCol('inicio'),
+      fin: findCol('fin'),
+      est: findCol('estado'),
+      area: findCol('area'),
+      proy: findCol('proyecto')
     };
 
     const allHitos = rows.slice(1).map(row => ({
-      id: row[idx.id] || '',
-      nombre: row[idx.nombre] || '',
-      responsable: row[idx.responsable] || '',
-      fechaInicio: row[idx.inicio] || '',
-      fechaFin: row[idx.fin] || '',
-      estado: row[idx.estado] || '',
-      area: row[idx.area] || '',
-      proyecto: row[idx.proyecto] || '' // Ahora lo busca por nombre, no por posición 7
+      id: row[col.id] !== -1 ? row[col.id] : '',
+      nombre: row[col.nombre] !== -1 ? row[col.nombre] : '',
+      responsable: row[col.resp] !== -1 ? row[col.resp] : '',
+      fechaInicio: row[col.ini] !== -1 ? row[col.ini] : '',
+      fechaFin: row[col.fin] !== -1 ? row[col.fin] : '',
+      estado: row[col.est] !== -1 ? row[col.est] : '',
+      area: row[col.area] !== -1 ? row[col.area] : '',
+      proyecto: row[col.proy] !== -1 ? row[col.proy] : ''
     }));
-
     let filteredHitos;
 
     // ADUANA DE SEGURIDAD: 
