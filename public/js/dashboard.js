@@ -68,9 +68,33 @@ const loadAdminDashboard = async (userEmail) => {
 
     // MODIFICACIÓN QUIRÚRGICA: Poblar selector de áreas desde la Fuente de Verdad (Excel)
     const projectAreaSelector = document.getElementById('project-area-selector');
+    const hitoAreaSelector = document.getElementById('hito-area-selector');
+    const hitoProjectSelector = document.getElementById('hito-proyecto-selector');
+
     if (projectAreaSelector) {
         projectAreaSelector.innerHTML = '<option value="">-- Seleccionar Área --</option>' + 
             allAreas.map(area => `<option value="${area}">${area}</option>`).join('');
+    }
+
+    // Lógica encadenada para el Formulario de Hitos
+    if (hitoAreaSelector && hitoProjectSelector) {
+        // 1. Poblamos el selector de áreas del Hito
+        hitoAreaSelector.innerHTML = '<option value="">-- Seleccionar Área --</option>' + 
+            allAreas.map(area => `<option value="${area}">${area}</option>`).join('');
+
+        // 2. Listener para filtrar proyectos según el área elegida
+        hitoAreaSelector.addEventListener('change', () => {
+            const selectedArea = hitoAreaSelector.value;
+            // Filtramos proyectos únicos que pertenecen a esta área basándonos en los hitos existentes
+            const projectsInArea = [...new Set(allHitos
+                .filter(h => h.area === selectedArea)
+                .map(h => h.proyecto)
+                .filter(Boolean)
+            )].sort();
+
+            hitoProjectSelector.innerHTML = '<option value="">-- Seleccionar Proyecto --</option>' + 
+                projectsInArea.map(p => `<option value="${p}">${p}</option>`).join('');
+        });
     }
 
     // 1. RENDERIZAR CRONOGRAMA TIPO GANTT (NIVEL 1)
