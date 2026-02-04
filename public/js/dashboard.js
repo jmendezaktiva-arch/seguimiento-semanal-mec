@@ -106,14 +106,31 @@ const loadAdminDashboard = async (userEmail) => {
                 return;
             }
 
-            // Filtrado Quirúrgico: Ignora espacios, mayúsculas y minúsculas
+            // --- BLOQUE DE AUDITORÍA QUIRÚRGICA ---
+            console.group("🔎 AUDITORÍA DE PROYECTOS");
+            console.log("1. Área seleccionada por usuario:", selectedArea);
+            console.log("2. Total de hitos recibidos del servidor:", allHitos.length);
+            
+            // Verificamos si al menos un hito tiene el campo proyecto
+            const hitosConDatos = allHitos.filter(h => h.proyecto && h.proyecto.trim() !== "");
+            console.log("3. Hitos que SÍ tienen nombre de proyecto:", hitosConDatos.length);
+            
+            if(allHitos.length > 0) {
+                console.log("4. Ejemplo de estructura del primer hito:", allHitos[0]);
+            }
+
             const projectsInArea = [...new Set(allHitos
-                .filter(h => (h.area || '').trim().toLowerCase() === selectedArea)
+                .filter(h => {
+                    const match = (h.area || '').trim().toLowerCase() === selectedArea;
+                    return match;
+                })
                 .map(h => (h.proyecto || '').trim())
                 .filter(Boolean)
             )].sort();
 
-            console.log(`Buscando proyectos para: "${selectedArea}". Encontrados:`, projectsInArea);
+            console.log("5. Proyectos encontrados tras filtrar por área:", projectsInArea);
+            console.groupEnd();
+            // --- FIN BLOQUE DE AUDITORÍA ---
 
             hitoProjectSelector.innerHTML = '<option value="">-- Seleccionar Proyecto --</option>' + 
                 projectsInArea.map(p => `<option value="${p}">${p}</option>`).join('');
