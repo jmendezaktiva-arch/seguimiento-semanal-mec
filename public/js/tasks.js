@@ -245,6 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addTaskForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const descriptionInput = document.getElementById('description');
+            const startDateInput = document.getElementById('start-date');
             const dateInput = document.getElementById('due-date');
             const hitoSelector = document.getElementById('hito-selector');
             const submitButton = addTaskForm.querySelector('button[type="submit"]');
@@ -269,12 +270,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ 
                         action: 'create', 
                         description: descriptionInput.value, 
+                        startDate: startDateInput.value, // Nueva Fecha de Inicio capturada
                         dueDate: dateInput.value, 
                         assignedTo: finalAssignedTo, 
                         asignadoPor: userEmail,      
                         hitoId,
-                        area: area,     // Trazabilidad Automática
-                        proyecto: proyecto // Trazabilidad Automática
+                        area: area,     
+                        proyecto: proyecto 
                     }),
                 });
                 addTaskForm.reset();

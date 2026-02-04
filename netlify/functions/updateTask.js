@@ -23,7 +23,8 @@ exports.handler = async (event) => {
       const { rowNumber, newStatus } = data;
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `${sheetName}!E${rowNumber}`,
+        // CORRECCIÓN QUIRÚRGICA: El estatus se movió de la E a la F por la nueva columna de inicio
+        range: `${sheetName}!F${rowNumber}`,
         valueInputOption: 'USER_ENTERED',
         resource: { values: [[newStatus]] },
       });
@@ -31,27 +32,28 @@ exports.handler = async (event) => {
     }
 
     if (data.action === 'create') {
-      // EXTRAEMOS LOS NUEVOS CAMPOS: area, proyecto y asignadoPor
-      const { description, dueDate, assignedTo, hitoId, area, proyecto, asignadoPor } = data;
+      // INTEGRIDAD DE DATOS: Extraemos startDate del paquete recibido
+      const { description, startDate, dueDate, assignedTo, hitoId, area, proyecto, asignadoPor } = data;
       const newTaskId = Date.now().toString();
       
-      // AMPLIACIÓN: La fila ahora tiene 9 columnas (A hasta I)
+      // MAPEO QUIRÚRGICO: Re-alineamos las columnas para incluir la nueva columna D
       const newRow = [
-        newTaskId,      // A: ID
-        description,    // B: Descripción
-        assignedTo,     // C: Responsable
-        dueDate,        // D: Fecha Entrega
-        'Pendiente',    // E: Estatus
-        hitoId || '',   // F: ID Hito
-        area || '',     // G: Área
-        proyecto || '', // H: Proyecto
-        asignadoPor || '' // I: Quién asignó la tarea
+        newTaskId,        // A: ID
+        description,      // B: Descripción
+        assignedTo,       // C: Responsable
+        startDate || '',  // D: Fecha Inicio (NUEVA)
+        dueDate,          // E: Fecha Fin / Entrega
+        'Pendiente',      // F: Estatus
+        hitoId || '',     // G: ID Hito
+        area || '',       // H: Área
+        proyecto || '',   // I: Proyecto
+        asignadoPor || '' // J: Quién asignó la tarea
       ];
 
       await sheets.spreadsheets.values.append({
         spreadsheetId,
-        // ACTUALIZADO: El rango ahora llega hasta la columna I
-        range: `${sheetName}!A:I`, 
+        // ACTUALIZADO: El rango ahora llega hasta la columna J para cubrir todas las dimensiones
+        range: `${sheetName}!A:J`, 
         valueInputOption: 'USER_ENTERED',
         insertDataOption: 'INSERT_ROWS',
         resource: { values: [newRow] },
@@ -80,24 +82,25 @@ exports.handler = async (event) => {
     }
 
     if (data.action === 'updateFull') {
-      const { rowNumber, description, assignedTo, dueDate, status, hitoId, area, proyecto, asignadoPor } = data;
+      // RE-ALINEACIÓN QUIRÚRGICA: Extraemos startDate e incluimos la columna J
+      const { rowNumber, description, assignedTo, startDate, dueDate, status, hitoId, area, proyecto, asignadoPor } = data;
       
-      // Creamos el array con los datos que corresponden a las columnas B hasta la I
       const updatedValues = [
-        description,    // B: Descripción
-        assignedTo,     // C: Responsable
-        dueDate,        // D: Fecha Entrega
-        status,         // E: Estatus
-        hitoId || '',   // F: ID Hito
-        area || '',     // G: Área
-        proyecto || '', // H: Proyecto
-        asignadoPor || '' // I: Quién asignó
+        description,      // B: Descripción
+        assignedTo,       // C: Responsable
+        startDate || '',  // D: Fecha Inicio
+        dueDate,          // E: Fecha Fin / Entrega
+        status,           // F: Estatus
+        hitoId || '',     // G: ID Hito
+        area || '',       // H: Área
+        proyecto || '',   // I: Proyecto
+        asignadoPor || '' // J: Quién asignó
       ];
 
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        // Actualizamos desde la B hasta la I para no sobreescribir el ID único de la columna A
-        range: `${sheetName}!B${rowNumber}:I${rowNumber}`,
+        // RANGO EXPANDIDO: Ahora actualizamos desde B hasta J para cubrir la nueva estructura
+        range: `${sheetName}!B${rowNumber}:J${rowNumber}`,
         valueInputOption: 'USER_ENTERED',
         resource: { values: [updatedValues] },
       });

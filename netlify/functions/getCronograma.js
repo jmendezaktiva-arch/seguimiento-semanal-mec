@@ -45,14 +45,14 @@ exports.handler = async (event) => {
     };
 
     const allHitos = rows.slice(1).map(row => ({
-      id: row[col.id] !== -1 ? row[col.id] : '',
-      nombre: row[col.nombre] !== -1 ? row[col.nombre] : '',
-      responsable: row[col.resp] !== -1 ? row[col.resp] : '',
-      fechaInicio: row[col.ini] !== -1 ? row[col.ini] : '',
-      fechaFin: row[col.fin] !== -1 ? row[col.fin] : '',
-      estado: row[col.est] !== -1 ? row[col.est] : '',
-      area: row[col.area] !== -1 ? row[col.area] : '',
-      proyecto: row[col.proy] !== -1 ? row[col.proy] : ''
+      id: col.id !== -1 ? (row[col.id] || '') : '',
+      nombre: col.nombre !== -1 ? (row[col.nombre] || '') : '',
+      responsable: col.resp !== -1 ? (row[col.resp] || '') : '',
+      fechaInicio: col.ini !== -1 ? (row[col.ini] || '') : '',
+      fechaFin: col.fin !== -1 ? (row[col.fin] || '') : '',
+      estado: col.est !== -1 ? (row[col.est] || '') : '',
+      area: col.area !== -1 ? (row[col.area] || '') : '',
+      proyecto: col.proy !== -1 ? (row[col.proy] || '') : ''
     }));
     let filteredHitos;
 

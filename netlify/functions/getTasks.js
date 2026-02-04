@@ -20,8 +20,8 @@ exports.handler = async (event) => {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      // SE EXTIENDE EL RANGO: De A:F a A:I para incluir Área, Proyecto y AsignadoPor
-      range: `${sheetName}!A:I`, 
+      // RANGO TOTAL: Ahora leemos de la A a la J (10 columnas)
+      range: `${sheetName}!A:J`, 
     });
 
     const rows = response.data.values;
@@ -32,12 +32,13 @@ exports.handler = async (event) => {
       id: row[0],
       description: row[1],
       assignedTo: row[2],
-      dueDate: row[3],
-      status: row[4],
-      hitoId: row[5] || '',
-      area: row[6] || '',
-      proyecto: row[7] || '',
-      asignadoPor: row[8] || ''
+      startDate: row[3] || '',  // D: Nueva Fecha de Inicio
+      dueDate: row[4] || '',    // E: Fecha de Fin (antes estaba en la D)
+      status: row[5] || '',     // F: Estatus
+      hitoId: row[6] || '',     // G: ID Hito
+      area: row[7] || '',       // H: Área
+      proyecto: row[8] || '',   // I: Proyecto
+      asignadoPor: row[9] || '' // J: Quién asignó
     }));
 
     // Capturamos el rol desde los parámetros (por defecto es 'Usuario' para mayor seguridad)
