@@ -83,23 +83,25 @@ const loadAdminDashboard = async (userEmail) => {
             allAreas.map(area => `<option value="${area}">${area}</option>`).join('');
 
         // 2. Listener para filtrar proyectos (con Normalización Quirúrgica)
-        // Limpiamos listeners previos clonando el nodo para evitar acumulación
         const newHitoAreaSelector = hitoAreaSelector.cloneNode(true);
         hitoAreaSelector.parentNode.replaceChild(newHitoAreaSelector, hitoAreaSelector);
 
         newHitoAreaSelector.addEventListener('change', () => {
             const selectedArea = newHitoAreaSelector.value.trim().toLowerCase();
+            
             if (!selectedArea) {
                 hitoProjectSelector.innerHTML = '<option value="">-- Seleccionar Proyecto --</option>';
                 return;
             }
 
-            // Filtramos ignorando mayúsculas, minúsculas y espacios accidentales
+            // Filtrado Quirúrgico: Ignora espacios, mayúsculas y minúsculas
             const projectsInArea = [...new Set(allHitos
                 .filter(h => (h.area || '').trim().toLowerCase() === selectedArea)
-                .map(h => h.proyecto)
+                .map(h => (h.proyecto || '').trim())
                 .filter(Boolean)
             )].sort();
+
+            console.log(`Buscando proyectos para: "${selectedArea}". Encontrados:`, projectsInArea);
 
             hitoProjectSelector.innerHTML = '<option value="">-- Seleccionar Proyecto --</option>' + 
                 projectsInArea.map(p => `<option value="${p}">${p}</option>`).join('');
