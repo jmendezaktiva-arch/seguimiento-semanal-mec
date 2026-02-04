@@ -278,22 +278,38 @@ const loadUsersForHitos = async () => {
 document.getElementById('add-hito-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
+    
+    // Captura de datos de jerarquía estratégica
+    const area = document.getElementById('hito-area-selector').value;
+    const proyecto = document.getElementById('hito-proyecto-selector').value;
     const nombre = document.getElementById('hito-nombre').value;
     const responsable = document.getElementById('hito-responsable').value;
     const fechaFin = document.getElementById('hito-fecha-fin').value;
+
+    if (!area || !proyecto) {
+        alert('Por favor, selecciona el Área y el Proyecto para asegurar la trazabilidad.');
+        return;
+    }
 
     btn.disabled = true;
     btn.textContent = 'Guardando...';
 
     try {
+        // Enviamos el objeto completo incluyendo Área y Proyecto
         await fetch('/.netlify/functions/updateCronograma', {
             method: 'POST',
-            body: JSON.stringify({ nombre, responsable, fechaFin })
+            body: JSON.stringify({ area, proyecto, nombre, responsable, fechaFin })
         });
+        
         e.target.reset();
-        alert('Estrategia actualizada.');
+        alert('Hito registrado con éxito en el cronograma estratégico.');
+        
+        // Recarga el Dashboard para ver el hito en su nueva jerarquía
         loadAdminDashboard(localStorage.getItem('userEmail'));
-    } catch (err) { alert('Error al guardar.'); }
+    } catch (err) { 
+        console.error(err);
+        alert('Error al guardar el hito.'); 
+    }
     finally { btn.disabled = false; btn.textContent = 'Determinar Hito'; }
 });
 
