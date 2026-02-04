@@ -26,8 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error('Error al conectar con el servidor.');
         }
 
-        const authorizedUsers = await response.json();
-        // CAMBIO: Buscamos el objeto de usuario completo, no solo el email
+        const data = await response.json();
+        
+        // Extraemos la lista de usuarios del nuevo objeto de respuesta { users, areas }
+        const authorizedUsers = data.users || [];
         const currentUser = authorizedUsers.find(user => user.email === email);
 
         if (currentUser) {
