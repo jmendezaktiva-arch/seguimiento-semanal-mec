@@ -121,12 +121,15 @@ const loadAdminDashboard = async (userEmail) => {
                            meses.map(m => `<div class="p-2 text-center border-r">${m}</div>`).join('');
         ganttContainer.appendChild(header);
 
-        // AGRUPACIÓN JERÁRQUICA: Área > Proyecto
+        // AGRUPACIÓN JERÁRQUICA (Normalización Quirúrgica): Área > Proyecto
         const hierarchy = allHitos.reduce((acc, hito) => {
-            const area = hito.area || 'Sin Área';
-            const proyecto = hito.proyecto || 'Proyecto General';
+            // Limpiamos espacios y estandarizamos para evitar duplicidad por errores de dedo
+            const area = (hito.area || '').trim() || 'Sin Área';
+            const proyecto = (hito.proyecto || '').trim() || 'Proyecto General';
+            
             if (!acc[area]) acc[area] = {};
             if (!acc[area][proyecto]) acc[area][proyecto] = [];
+            
             acc[area][proyecto].push(hito);
             return acc;
         }, {});
