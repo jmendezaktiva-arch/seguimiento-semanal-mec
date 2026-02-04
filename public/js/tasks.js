@@ -28,6 +28,9 @@ const loadHitosForSelector = async (userEmail) => {
         hitos.forEach(hito => {
             const option = document.createElement('option');
             option.value = hito.id;
+            // Inyección Quirúrgica: Almacenamos el Área y Proyecto como metadatos en el HTML
+            option.dataset.area = hito.area || '';
+            option.dataset.proyecto = hito.proyecto || '';
             option.textContent = `${hito.id} - ${hito.nombre}`;
             hitoSelector.appendChild(option);
         });
@@ -43,7 +46,8 @@ const loadUsersForAssignment = async () => {
 
     try {
         const response = await fetch('/.netlify/functions/getUsers');
-        const users = await response.json();
+        const data = await response.json();
+        const users = data.users || []; // Adaptación quirúrgica: extraemos solo los usuarios del nuevo paquete
         selector.innerHTML = ''; // Limpiamos el mensaje de carga
         
         const currentUserEmail = localStorage.getItem('userEmail');
