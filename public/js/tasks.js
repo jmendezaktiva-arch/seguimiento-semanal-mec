@@ -207,8 +207,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 taskElement.dataset.status = task.status;
                 
                 const statusColor = isCompleted ? 'bg-green-500' : 'bg-amber-500';
-                const date = parseDate(task.dueDate);
-                const formattedDate = date ? date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '---';
+                
+                // Procesamiento de Rango de Fechas
+                const dStart = parseDate(task.startDate);
+                const dEnd = parseDate(task.dueDate);
+                
+                const fStart = dStart ? dStart.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '';
+                const fEnd = dEnd ? dEnd.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '---';
+                
+                // Si hay fecha de inicio, mostramos el rango; si no, solo la entrega
+                const dateDisplay = fStart ? `${fStart} - ${fEnd}` : fEnd;
                 
                 taskElement.innerHTML = `
                     <div class="flex items-center flex-1">
@@ -218,10 +226,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="flex gap-2 mt-1">
                                 ${task.hitoId ? `<span class="text-[9px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold">🎯 ${task.hitoId}</span>` : ''}
                                 ${task.area ? `<span class="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold uppercase">${task.area}</span>` : ''}
+                                ${task.proyecto ? `<span class="text-[9px] bg-blue-50 text-blue-400 px-2 py-0.5 rounded-full italic font-medium">📁 ${task.proyecto}</span>` : ''}
                             </div>
                         </div>
                     </div>
-                    <span class="text-xs font-bold text-slate-400 ml-4">${formattedDate}</span>
+                    <div class="text-right ml-4 shrink-0">
+                        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-tighter">Plazo</span>
+                        <span class="text-[11px] font-bold text-slate-500">${dateDisplay}</span>
+                    </div>
                 `;
                 monthTasksContainer.appendChild(taskElement);
             });
