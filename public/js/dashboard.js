@@ -236,7 +236,11 @@ const loadUsersForHitos = async () => {
     if (!selector) return;
     try {
         const response = await fetch('/.netlify/functions/getUsers');
-        const users = await response.json();
+        const data = await response.json();
+        
+        // Ajuste Quirúrgico: Extraemos solo la lista de usuarios del objeto de respuesta
+        const users = data.users || [];
+        
         selector.innerHTML = '<option value="">Selecciona responsable</option>';
         users.forEach(user => {
             const option = document.createElement('option');
