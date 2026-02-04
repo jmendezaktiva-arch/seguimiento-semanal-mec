@@ -1,4 +1,4 @@
-// public/js/dashboard.js (VERSIÓN MAESTRA FINAL - 100% VALIDADA Y CORREGIDA)
+// public/js/dashboard.js
 
 const getCurrentWeekId = () => {
     const date = new Date();
@@ -181,6 +181,14 @@ const loadAdminDashboard = async (userEmail) => {
             teamListBody.appendChild(row);
         });
     });
+
+    // MODIFICACIÓN QUIRÚRGICA: Poblar selector de áreas para Proyectos
+    const projectAreaSelector = document.getElementById('project-area-selector');
+    if (projectAreaSelector) {
+        const areas = Object.keys(usersByArea).sort();
+        projectAreaSelector.innerHTML = '<option value="">-- Seleccionar Área --</option>' + 
+            areas.map(area => `<option value="${area}">${area}</option>`).join('');
+    }
 
   } catch (error) {
     console.error("Fallo crítico en Dashboard Admin:", error);
