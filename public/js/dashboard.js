@@ -82,12 +82,21 @@ const loadAdminDashboard = async (userEmail) => {
         hitoAreaSelector.innerHTML = '<option value="">-- Seleccionar Área --</option>' + 
             allAreas.map(area => `<option value="${area}">${area}</option>`).join('');
 
-        // 2. Listener para filtrar proyectos según el área elegida
-        hitoAreaSelector.addEventListener('change', () => {
-            const selectedArea = hitoAreaSelector.value;
-            // Filtramos proyectos únicos que pertenecen a esta área basándonos en los hitos existentes
+        // 2. Listener para filtrar proyectos (con Normalización Quirúrgica)
+        // Limpiamos listeners previos clonando el nodo para evitar acumulación
+        const newHitoAreaSelector = hitoAreaSelector.cloneNode(true);
+        hitoAreaSelector.parentNode.replaceChild(newHitoAreaSelector, hitoAreaSelector);
+
+        newHitoAreaSelector.addEventListener('change', () => {
+            const selectedArea = newHitoAreaSelector.value.trim().toLowerCase();
+            if (!selectedArea) {
+                hitoProjectSelector.innerHTML = '<option value="">-- Seleccionar Proyecto --</option>';
+                return;
+            }
+
+            // Filtramos ignorando mayúsculas, minúsculas y espacios accidentales
             const projectsInArea = [...new Set(allHitos
-                .filter(h => h.area === selectedArea)
+                .filter(h => (h.area || '').trim().toLowerCase() === selectedArea)
                 .map(h => h.proyecto)
                 .filter(Boolean)
             )].sort();
