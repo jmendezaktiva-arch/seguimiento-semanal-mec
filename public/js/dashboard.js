@@ -325,3 +325,48 @@ const renderDoughnutChart = (canvasElement, completed, pending, color) => {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } } } 
     });
 };
+
+// LÓGICA QUIRÚRGICA: Escuchar el envío del nuevo formulario de proyectos
+document.getElementById('project-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    const area = document.getElementById('project-area-selector').value;
+    const proyecto = document.getElementById('project-name').value;
+    const userEmail = localStorage.getItem('userEmail');
+
+    if (!area || !proyecto) {
+        alert('Por favor, selecciona un área y escribe un nombre para el proyecto.');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Registrando...';
+
+    try {
+        // Aprovechamos la función updateCronograma que ya creamos
+        const response = await fetch('/.netlify/functions/updateCronograma', {
+            method: 'POST',
+            body: JSON.stringify({
+                nombre: `INICIO: ${proyecto}`, // Hito automático de apertura
+                responsable: userEmail,
+                fechaFin: new Date().toISOString().split('T')[0], // Fecha de hoy
+                area: area,
+                proyecto: proyecto
+            })
+        });
+
+        if (!response.ok) throw new Error('Error en el servidor');
+
+        e.target.reset();
+        alert(`Proyecto "${proyecto}" registrado con éxito en el Área ${area}.`);
+        
+        // Recargamos el Dashboard para ver el nuevo proyecto en el Gantt
+        loadAdminDashboard(userEmail);
+    } catch (err) {
+        console.error(err);
+        alert('Error al registrar el proyecto. Revisa la conexión.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Registrar Proyecto';
+    }
+});
