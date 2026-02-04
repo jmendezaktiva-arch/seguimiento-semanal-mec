@@ -14,28 +14,28 @@ exports.handler = async (event, context) => {
 
     const sheets = google.sheets({ version: 'v4', auth });
 
-    // CAMBIO: Leemos las columnas B (Email) y C (Rol)
-    const response = await sheets.spreadsheets.values.get({
+    // CONSULTA MULTI-HOJA: Recuperamos Usuarios (B:D) y Configuración de Áreas (A2:A)
+    const response = await sheets.spreadsheets.batchGet({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Usuarios!B2:C', 
+      ranges: ['Usuarios!B2:D', 'Config_Areas!A2:A'],
     });
 
-    const rows = response.data.values;
-    if (rows && rows.length) {
-      // CAMBIO: Creamos un array de objetos de usuario con email y rol
-      const users = rows.map(row => ({
-        email: row[0] ? row[0].toLowerCase() : '',
-        role: row[1] || 'Usuario', // Si el rol no está definido, se asume 'Usuario'
-      }));
-      return {
-        statusCode: 200,
-        body: JSON.stringify(users),
-      };
-    }
+    const userRows = response.data.valueRanges[0].values || [];
+    const areaRows = response.data.valueRanges[1].values || [];
+
+    // Mapeo de Usuarios con su Área correspondiente
+    const users = userRows.map(row => ({
+      email: row[0] ? row[0].toLowerCase() : '',
+      role: row[1] || 'Usuario',
+      area: row[2] || 'General' // Recuperamos la columna D
+    }));
+
+    // Mapeo de Áreas maestras desde Config_Areas
+    const areas = areaRows.map(row => row[0]).filter(Boolean);
 
     return {
       statusCode: 200,
-      body: JSON.stringify([]),
+      body: JSON.stringify({ users, areas }),
     };
 
   } catch (error) {
