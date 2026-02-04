@@ -14,24 +14,31 @@ exports.handler = async (event, context) => {
 
     const sheets = google.sheets({ version: 'v4', auth });
 
-    // CONSULTA MULTI-HOJA: Recuperamos Usuarios (B:D) y Configuración de Áreas (A2:A)
-    const response = await sheets.spreadsheets.batchGet({
+    // CONSULTA INDIVIDUAL (Más segura): Primero los usuarios
+    const userRes = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      ranges: ['Usuarios!B2:D', 'Config_Areas!A2:A'],
+      range: 'Usuarios!B2:D', 
     });
 
-    const userRows = response.data.valueRanges[0].values || [];
-    const areaRows = response.data.valueRanges[1].values || [];
-
-    // Mapeo de Usuarios con su Área correspondiente
+    const userRows = userRes.data.values || [];
     const users = userRows.map(row => ({
       email: row[0] ? row[0].toLowerCase() : '',
       role: row[1] || 'Usuario',
-      area: row[2] || 'General' // Recuperamos la columna D
+      area: row[2] || 'General'
     }));
 
-    // Mapeo de Áreas maestras desde Config_Areas
-    const areas = areaRows.map(row => row[0]).filter(Boolean);
+    // CONSULTA OPCIONAL: Áreas (Si falla, el sistema sigue funcionando)
+    let areas = [];
+    try {
+      const areaRes = await sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: 'Config_Areas!A2:A',
+      });
+      areas = (areaRes.data.values || []).map(row => row[0]).filter(Boolean);
+    } catch (e) {
+      console.warn("Aviso: No se encontró la pestaña 'Config_Areas'. Usando áreas de usuarios.");
+      areas = [...new Set(users.map(u => u.area))];
+    }
 
     return {
       statusCode: 200,
