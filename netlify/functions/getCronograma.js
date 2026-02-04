@@ -28,16 +28,31 @@ exports.handler = async (event) => {
     const rows = response.data.values;
     if (!rows || rows.length <= 1) return { statusCode: 200, body: JSON.stringify([]) };
 
+    const headers = rows[0]; // Capturamos la primera fila (encabezados)
+    
+    // Mapeo dinámico: Buscamos en qué posición está cada columna
+    const getIdx = (name) => headers.findIndex(h => h.toLowerCase().includes(name.toLowerCase()));
+    
+    const idx = {
+      id: getIdx('ID'),
+      nombre: getIdx('Nombre'),
+      responsable: getIdx('Responsable'),
+      inicio: getIdx('Inicio'),
+      fin: getIdx('Fin'),
+      estado: getIdx('Estado'),
+      area: getIdx('Area'),
+      proyecto: getIdx('Proyecto')
+    };
+
     const allHitos = rows.slice(1).map(row => ({
-      id: row[0],
-      nombre: row[1],
-      responsable: row[2],
-      fechaInicio: row[3],
-      fechaFin: row[4],
-      estado: row[5],
-      area: row[6] || '',
-      // NUEVO: Mapeo de la octava columna (H) para la jerarquía estratégica
-      proyecto: row[7] || ''
+      id: row[idx.id] || '',
+      nombre: row[idx.nombre] || '',
+      responsable: row[idx.responsable] || '',
+      fechaInicio: row[idx.inicio] || '',
+      fechaFin: row[idx.fin] || '',
+      estado: row[idx.estado] || '',
+      area: row[idx.area] || '',
+      proyecto: row[idx.proyecto] || '' // Ahora lo busca por nombre, no por posición 7
     }));
 
     let filteredHitos;
