@@ -15,19 +15,19 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
 
   try {
-    // MODIFICACIÓN: Ahora extraemos también 'area' y 'proyecto' del cuerpo de la solicitud
-    const { nombre, responsable, fechaFin, area, proyecto } = JSON.parse(event.body);
-    const fechaInicio = new Date().toLocaleDateString('es-ES'); 
+    // LÓGICA QUIRÚRGICA: Capturamos la fecha de inicio enviada por el front (si existe)
+    const { nombre, responsable, fechaInicio, fechaFin, area, proyecto } = JSON.parse(event.body);
     
-    // Generamos un ID basado en el tiempo para que sea único
+    // Si no viene fecha de inicio (ej. desde el creador de proyectos), usamos HOY en formato ISO universal
+    const finalStartDate = fechaInicio || new Date().toISOString().split('T')[0];
+    
     const idHito = `H-${Date.now().toString().slice(-4)}`;
 
-    // MODIFICACIÓN: Se expande la fila para incluir las columnas G (Área) y H (Proyecto)
     const newRow = [
       idHito, 
       nombre, 
       responsable, 
-      fechaInicio, 
+      finalStartDate, 
       fechaFin, 
       'En Proceso',
       area || '',

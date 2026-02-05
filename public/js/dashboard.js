@@ -455,13 +455,16 @@ document.getElementById('project-form')?.addEventListener('submit', async (e) =>
     btn.textContent = 'Registrando...';
 
     try {
-        // Aprovechamos la función updateCronograma que ya creamos
+        // LÓGICA QUIRÚRGICA: Definimos una estampa de tiempo ISO única para inicio y fin
+        const todayISO = new Date().toISOString().split('T')[0];
+        
         const response = await fetch('/.netlify/functions/updateCronograma', {
             method: 'POST',
             body: JSON.stringify({
-                nombre: `INICIO: ${proyecto}`, // Hito automático de apertura
+                nombre: `INICIO: ${proyecto}`, 
                 responsable: userEmail,
-                fechaFin: new Date().toISOString().split('T')[0], // Fecha de hoy
+                fechaInicio: todayISO, // Enviamos inicio explícito
+                fechaFin: todayISO,    // El hito de apertura es puntual (mismo día)
                 area: area,
                 proyecto: proyecto
             })
