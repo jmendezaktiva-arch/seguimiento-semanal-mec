@@ -160,6 +160,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     const renderTasks = (tasksToRender = userTasks) => {
+        // [PASO 1] CAPTURA PREVENTIVA: Guardamos qué meses estaban abiertos antes de borrar el HTML
+        const expandedMonths = Array.from(taskListContainer.querySelectorAll('[id^="tasks-"]'))
+            .filter(el => el.style.display === 'block')
+            .map(el => el.id);
+
         taskListContainer.innerHTML = '';
         
         if (tasksToRender.length === 0) {
@@ -167,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 1. Ordenar tareas: Pendientes primero, luego por fecha
+        // [PASO 2] ORDENAMIENTO Y AGRUPACIÓN (Se mantiene integridad de lógica)
         const sortedTasks = [...tasksToRender].sort((a, b) => {
             const dateA = parseDate(a.dueDate) || 0;
             const dateB = parseDate(b.dueDate) || 0;
@@ -175,19 +180,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return a.status === 'Pendiente' ? -1 : 1;
         });
 
-        // 2. Agrupar por Mes
         const tasksByMonth = sortedTasks.reduce((acc, task) => {
             const date = parseDate(task.dueDate);
-            const monthName = date 
-                ? date.toLocaleString('es-ES', { month: 'long', year: 'numeric' })
-                : 'Sin Fecha';
+            const monthName = date ? date.toLocaleString('es-ES', { month: 'long', year: 'numeric' }) : 'Sin Fecha';
             const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
             if (!acc[capitalizedMonth]) acc[capitalizedMonth] = [];
             acc[capitalizedMonth].push(task);
             return acc;
         }, {});
 
-        // 3. Renderizar Grupos
+        // [PASO 3] RENDERIZADO CON MEMORIA DE ESTADO
         for (const month in tasksByMonth) {
             const monthHeader = document.createElement('h3');
             monthHeader.className = 'text-lg font-bold text-slate-600 mt-6 mb-2 cursor-pointer hover:text-blue-600 flex items-center';
@@ -198,10 +200,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const monthId = `tasks-${month.replace(/[^a-zA-Z0-9]/g, '-')}`;
             monthTasksContainer.id = monthId;
             
-            // LÓGICA QUIRÚRGICA: Mantenemos el estado de apertura actual
-            const existingContainer = document.getElementById(monthId);
-            const currentStatus = existingContainer ? existingContainer.style.display : 'none';
-            monthTasksContainer.style.display = currentStatus;
+            // Si el ID del mes estaba en nuestra lista de "abiertos", lo mantenemos visible
+            monthTasksContainer.style.display = expandedMonths.includes(monthId) ? 'block' : 'none';
 
             tasksByMonth[month].forEach(task => {
                 const isCompleted = task.status === 'Cumplida';
