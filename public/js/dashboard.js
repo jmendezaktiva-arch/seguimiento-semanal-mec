@@ -207,14 +207,15 @@ const loadAdminDashboard = async (userEmail) => {
                     if (colStart === null && colEnd !== null) colStart = colEnd;
                     if (colEnd === null && colStart !== null) colEnd = colStart;
 
-                    // Solo renderizamos el indicador si el hito toca algún mes del año actual
+                    // LÓGICA QUIRÚRGICA: Forzamos el estiramiento de la barra para ocupar el colSpan
                     if (colStart !== null && colEnd !== null && colStart <= 13 && colEnd >= 2 && colStart <= colEnd) {
                         const colSpan = (colEnd - colStart) + 1;
                         rowHtml += `
-                            <div class="absolute h-5 rounded-full shadow-sm flex items-center px-2 text-[8px] font-bold text-white transition-all overflow-hidden z-10" 
+                            <div class="absolute h-5 rounded-full shadow-sm flex items-center justify-center text-[8px] font-bold text-white transition-all overflow-hidden z-10" 
                                  style="grid-column: ${colStart} / span ${colSpan}; 
                                         background: linear-gradient(90deg, #3b82f6 ${progress}%, #cbd5e1 ${progress}%);
-                                        margin-left: 4px; margin-right: 4px;">
+                                        width: calc(100% - 8px);
+                                        left: 4px;">
                                 ${progress}%
                             </div>`;
                     }
