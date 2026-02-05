@@ -326,15 +326,16 @@ document.getElementById('add-hito-form')?.addEventListener('submit', async (e) =
     e.preventDefault();
     const btn = e.target.querySelector('button');
     
-    // Captura de datos de jerarquía estratégica
+    // Captura de datos de jerarquía estratégica y temporal
     const area = document.getElementById('hito-area-selector').value;
     const proyecto = document.getElementById('hito-proyecto-selector').value;
     const nombre = document.getElementById('hito-nombre').value;
     const responsable = document.getElementById('hito-responsable').value;
+    const fechaInicio = document.getElementById('hito-fecha-inicio').value;
     const fechaFin = document.getElementById('hito-fecha-fin').value;
 
-    if (!area || !proyecto) {
-        alert('Por favor, selecciona el Área y el Proyecto para asegurar la trazabilidad.');
+    if (!area || !proyecto || !fechaInicio || !fechaFin) {
+        alert('Por favor, completa todos los campos, incluyendo las fechas de Inicio y Fin.');
         return;
     }
 
@@ -342,10 +343,10 @@ document.getElementById('add-hito-form')?.addEventListener('submit', async (e) =
     btn.textContent = 'Guardando...';
 
     try {
-        // Enviamos el objeto completo incluyendo Área y Proyecto
+        // Enviamos el objeto completo incluyendo la nueva Fecha de Inicio
         await fetch('/.netlify/functions/updateCronograma', {
             method: 'POST',
-            body: JSON.stringify({ area, proyecto, nombre, responsable, fechaFin })
+            body: JSON.stringify({ area, proyecto, nombre, responsable, fechaInicio, fechaFin })
         });
         
         e.target.reset();
