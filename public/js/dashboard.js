@@ -180,28 +180,44 @@ const loadAdminDashboard = async (userEmail) => {
                     
                     const dStart = parseDate(hito.fechaInicio);
                     const dEnd = parseDate(hito.fechaFin);
-                    const startMonth = dStart ? dStart.getMonth() + 1 : 1;
-                    const endMonth = dEnd ? dEnd.getMonth() + 1 : startMonth;
+                    const curYear = new Date().getFullYear();
                     
                     const row = document.createElement('div');
-                    // Ajuste: Cambiamos 'h-10' por 'min-h-[40px]' para que la fila crezca si el texto es largo
                     row.className = 'grid grid-cols-13 border-b hover:bg-slate-50 relative min-h-[40px] items-center group';
                     
-                    // LÓGICA QUIRÚRGICA: w-80 y permitimos multilínea para ver el nombre completo del hito
                     let rowHtml = `<div class="p-2 pl-6 border-r w-80 text-[10px] text-slate-600 italic whitespace-normal break-words shrink-0" title="${hito.nombre}">${hito.nombre}</div>`;
                     for(let i=1; i<=12; i++) { rowHtml += `<div class="border-r h-full"></div>`; }
                     
-                    // Cálculo de columnas (Col 1 es el label, Col 2 es Enero...)
-                    const colStart = startMonth + 1;
-                    const colSpan = Math.max(1, (endMonth - startMonth) + 1);
-                    
-                    rowHtml += `
-                        <div class="absolute h-5 rounded-full shadow-sm flex items-center px-2 text-[8px] font-bold text-white transition-all overflow-hidden z-10" 
-                             style="grid-column: ${colStart} / span ${colSpan}; 
-                                    background: linear-gradient(90deg, #3b82f6 ${progress}%, #cbd5e1 ${progress}%);
-                                    margin-left: 4px; margin-right: 4px;">
-                            ${progress}%
-                        </div>`;
+                    // LÓGICA DE NORMALIZACIÓN TEMPORAL (Gantt Multi-año)
+                    let colStart = null;
+                    if (dStart) {
+                        if (dStart.getFullYear() < curYear) colStart = 2; // Inició antes de este año (Enero)
+                        else if (dStart.getFullYear() === curYear) colStart = dStart.getMonth() + 2;
+                        else colStart = 14; // Inicia el próximo año (Fuera de rango)
+                    }
+
+                    let colEnd = null;
+                    if (dEnd) {
+                        if (dEnd.getFullYear() > curYear) colEnd = 13; // Termina después de este año (Diciembre)
+                        else if (dEnd.getFullYear() === curYear) colEnd = dEnd.getMonth() + 2;
+                        else colEnd = 1; // Terminó el año pasado (Fuera de rango)
+                    }
+
+                    // Fallbacks de seguridad para asegurar visibilidad si existe al menos una fecha
+                    if (colStart === null && colEnd !== null) colStart = colEnd;
+                    if (colEnd === null && colStart !== null) colEnd = colStart;
+
+                    // Solo renderizamos el indicador si el hito toca algún mes del año actual
+                    if (colStart !== null && colEnd !== null && colStart <= 13 && colEnd >= 2 && colStart <= colEnd) {
+                        const colSpan = (colEnd - colStart) + 1;
+                        rowHtml += `
+                            <div class="absolute h-5 rounded-full shadow-sm flex items-center px-2 text-[8px] font-bold text-white transition-all overflow-hidden z-10" 
+                                 style="grid-column: ${colStart} / span ${colSpan}; 
+                                        background: linear-gradient(90deg, #3b82f6 ${progress}%, #cbd5e1 ${progress}%);
+                                        margin-left: 4px; margin-right: 4px;">
+                                ${progress}%
+                            </div>`;
+                    }
                     row.innerHTML = rowHtml;
                     ganttContainer.appendChild(row);
                 });
