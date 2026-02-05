@@ -146,8 +146,8 @@ const loadAdminDashboard = async (userEmail) => {
         const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
         const header = document.createElement('div');
         header.className = 'grid grid-cols-13 border-b bg-slate-50 font-bold text-[10px] text-slate-500 uppercase tracking-tighter sticky top-0 z-20';
-        // CAMBIO: w-40 (160px) por w-60 (240px) para coincidir con el nuevo CSS
-        header.innerHTML = `<div class="p-2 border-r w-60 bg-slate-100 shrink-0">Jerarquía / Mes</div>` + 
+        // SINCRONIZACIÓN: Usamos w-80 (320px) para coincidir con la cuadrícula del CSS
+        header.innerHTML = `<div class="p-2 border-r w-80 bg-slate-100 shrink-0">Jerarquía / Mes</div>` + 
                            meses.map(m => `<div class="p-2 text-center border-r min-w-[40px]">${m}</div>`).join('');
         ganttContainer.appendChild(header);
 
@@ -164,31 +164,31 @@ const loadAdminDashboard = async (userEmail) => {
         Object.keys(hierarchy).forEach(area => {
             const areaRow = document.createElement('div');
             areaRow.className = 'grid grid-cols-13 bg-slate-200 border-b font-bold text-[11px] text-slate-800 uppercase italic';
-            areaRow.innerHTML = `<div class="p-2 border-r w-60 truncate shrink-0">📍 Área: ${area}</div>` + Array(12).fill('<div class="border-r h-full"></div>').join('');
+            // LÓGICA QUIRÚRGICA: Eliminamos 'truncate' y permitimos saltos de línea (whitespace-normal)
+            areaRow.innerHTML = `<div class="p-2 border-r w-80 whitespace-normal break-words shrink-0">📍 Área: ${area}</div>` + Array(12).fill('<div class="border-r h-full"></div>').join('');
             ganttContainer.appendChild(areaRow);
 
             Object.keys(hierarchy[area]).forEach(proyecto => {
                 const projectRow = document.createElement('div');
-                projectRow.className = 'grid grid-cols-13 bg-slate-50 border-b font-semibold text-[10px] text-blue-700';
-                projectRow.innerHTML = `<div class="p-2 pl-4 border-r w-60 truncate shrink-0">📁 ${proyecto}</div>` + Array(12).fill('<div class="border-r h-full"></div>').join('');
+                projectRow.className = 'grid grid-cols-13 bg-slate-50 border-b font-semibold text-[10px] text-blue-700 items-center';
+                projectRow.innerHTML = `<div class="p-2 pl-4 border-r w-80 whitespace-normal break-words shrink-0">📁 ${proyecto}</div>` + Array(12).fill('<div class="border-r h-full"></div>').join('');
                 ganttContainer.appendChild(projectRow);
 
                 hierarchy[area][proyecto].forEach(hito => {
                     const hitoTasks = allTasks.filter(t => t.hitoId === hito.id);
                     const progress = hitoTasks.length > 0 ? Math.round((hitoTasks.filter(t => t.status === 'Cumplida').length / hitoTasks.length) * 100) : 0;
                     
-                    // RECALIBRACIÓN QUIRÚRGICA: Precisión de Meses
                     const dStart = parseDate(hito.fechaInicio);
                     const dEnd = parseDate(hito.fechaFin);
-                    
                     const startMonth = dStart ? dStart.getMonth() + 1 : 1;
                     const endMonth = dEnd ? dEnd.getMonth() + 1 : startMonth;
                     
                     const row = document.createElement('div');
-                    row.className = 'grid grid-cols-13 border-b hover:bg-slate-50 relative h-10 items-center group';
+                    // Ajuste: Cambiamos 'h-10' por 'min-h-[40px]' para que la fila crezca si el texto es largo
+                    row.className = 'grid grid-cols-13 border-b hover:bg-slate-50 relative min-h-[40px] items-center group';
                     
-                    // CAMBIO: w-60 (240px) y quitamos 'truncate' agresivo para que el nombre respire
-                    let rowHtml = `<div class="p-2 pl-6 border-r w-60 text-[10px] text-slate-600 truncate italic shrink-0" title="${hito.nombre}">${hito.nombre}</div>`;
+                    // LÓGICA QUIRÚRGICA: w-80 y permitimos multilínea para ver el nombre completo del hito
+                    let rowHtml = `<div class="p-2 pl-6 border-r w-80 text-[10px] text-slate-600 italic whitespace-normal break-words shrink-0" title="${hito.nombre}">${hito.nombre}</div>`;
                     for(let i=1; i<=12; i++) { rowHtml += `<div class="border-r h-full"></div>`; }
                     
                     // Cálculo de columnas (Col 1 es el label, Col 2 es Enero...)
