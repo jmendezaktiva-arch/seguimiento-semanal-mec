@@ -22,7 +22,7 @@ const loadHitosForSelector = async (userEmail) => {
     const hitoSelector = document.getElementById('hito-selector');
     if (!hitoSelector) return;
     try {
-        const response = await fetch(`/.netlify/functions/getCronograma?email=${userEmail}`);
+        const response = await fetch(`/.netlify/functions/getCronograma?scope=all`);
         const hitos = await response.json();
         hitoSelector.innerHTML = '<option value="">-- Tarea Operativa (Sin hito) --</option>';
         hitos.forEach(hito => {
