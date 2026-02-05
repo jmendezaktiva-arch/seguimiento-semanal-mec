@@ -197,7 +197,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const monthTasksContainer = document.createElement('div');
             const monthId = `tasks-${month.replace(/[^a-zA-Z0-9]/g, '-')}`;
             monthTasksContainer.id = monthId;
-            monthTasksContainer.style.display = 'none'; // Iniciamos colapsado
+            
+            // LÓGICA QUIRÚRGICA: Mantenemos el estado de apertura actual
+            const existingContainer = document.getElementById(monthId);
+            const currentStatus = existingContainer ? existingContainer.style.display : 'none';
+            monthTasksContainer.style.display = currentStatus;
 
             tasksByMonth[month].forEach(task => {
                 const isCompleted = task.status === 'Cumplida';
