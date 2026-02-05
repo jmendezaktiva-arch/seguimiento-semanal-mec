@@ -22,7 +22,9 @@ const loadHitosForSelector = async (userEmail) => {
     const hitoSelector = document.getElementById('hito-selector');
     if (!hitoSelector) return;
     try {
-        const response = await fetch(`/.netlify/functions/getCronograma?scope=all`);
+        // Recuperamos el rol para que el backend autorice el alcance 'all'
+        const userRole = localStorage.getItem('userRole') || 'Usuario';
+        const response = await fetch(`/.netlify/functions/getCronograma?scope=all&email=${userEmail}&role=${userRole}`);
         const hitos = await response.json();
         hitoSelector.innerHTML = '<option value="">-- Tarea Operativa (Sin hito) --</option>';
         hitos.forEach(hito => {

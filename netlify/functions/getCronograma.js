@@ -56,12 +56,13 @@ exports.handler = async (event) => {
     }));
     let filteredHitos;
 
-    // ADUANA DE SEGURIDAD: 
-    // Si es Admin y pide todo, entregamos todo.
-    // En cualquier otro caso, filtramos estrictamente por el email del responsable.
-    if (userRole === 'Admin' && scope === 'all') {
+    // MODIFICACIÓN QUIRÚRGICA: Apertura de Catálogo Estratégico
+    // Si el alcance solicitado es 'all', entregamos todos los hitos independientemente del rol.
+    // Esto permite que cualquier usuario alinee sus tareas operativas a los hitos del negocio.
+    if (scope === 'all') {
       filteredHitos = allHitos;
     } else {
+      // Mantenemos el filtro de responsabilidad para otras vistas (como el Dashboard personal)
       filteredHitos = allHitos.filter(h => 
         h.responsable && h.responsable.toLowerCase() === (userEmail ? userEmail.toLowerCase() : '')
       );
