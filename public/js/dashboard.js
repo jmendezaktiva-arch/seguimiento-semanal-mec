@@ -234,23 +234,14 @@ const loadAdminDashboard = async (userEmail) => {
                     row.innerHTML = rowHtml;
                     ganttContainer.appendChild(row);
 
-                    // [PASO 2: CONTENEDOR DE TAREAS OCULTO]
-                    const taskContainer = document.createElement('div');
-                    taskContainer.id = `tasks-for-${hito.id}`;
-                    taskContainer.className = 'hidden bg-slate-50 border-b text-[9px] text-slate-500';
-                    taskContainer.style.gridColumn = "1 / span 13"; // Ocupa todo el ancho del Gantt
-                    
-                    if (hitoTasks.length === 0) {
-                        taskContainer.innerHTML = `<div class="p-2 pl-12 italic">No hay tareas operativas vinculadas a este hito.</div>`;
-                    } else {
-                        // [PASO 2: LISTA DE TAREAS CON CAPACIDAD DE CAMBIO DE ESTATUS]
+                    // [MODIFICACIÓN QUIRÚRGICA: INTEGRACIÓN LIMPIA DEL DESGLOSE]
                     const taskContainer = document.createElement('div');
                     taskContainer.id = `tasks-for-${hito.id}`;
                     taskContainer.className = 'hidden bg-slate-50 border-b text-[9px] text-slate-500 shadow-inner';
                     taskContainer.style.gridColumn = "1 / span 13";
                     
                     if (totalTasks === 0) {
-                        taskContainer.innerHTML = `<div class="p-2 pl-12 italic">No hay tareas operativas vinculadas.</div>`;
+                        taskContainer.innerHTML = `<div class="p-2 pl-12 italic">No hay tareas operativas vinculadas a este hito.</div>`;
                     } else {
                         taskContainer.innerHTML = hitoTasks.map(t => `
                             <div class="flex items-center justify-between p-2 pl-12 border-b border-slate-100 hover:bg-white transition-colors group/task">
@@ -267,7 +258,6 @@ const loadAdminDashboard = async (userEmail) => {
                                 </div>
                             </div>
                         `).join('');
-                    }
                     }
                     ganttContainer.appendChild(taskContainer);
                 });
@@ -365,6 +355,44 @@ document.getElementById('admin-team-list')?.addEventListener('click', async (eve
             });
             loadAdminDashboard(localStorage.getItem('userEmail'));
         } catch (e) { console.error(e); }
+    }
+});
+
+// [MODIFICACIÓN QUIRÚRGICA: INTERACTIVIDAD DE TAREAS EN GANTT]
+document.getElementById('gantt-chart')?.addEventListener('click', async (event) => {
+    if (event.target.classList.contains('status-circle-dashboard')) {
+        const circle = event.target;
+        const rowNumber = circle.dataset.row;
+        const currentStatus = circle.dataset.status;
+        const newStatus = currentStatus === 'Pendiente' ? 'Cumplida' : 'Pendiente';
+
+        // Feedback visual inmediato (UX de alta respuesta)
+        circle.style.opacity = "0.5";
+        circle.style.cursor = "wait";
+
+        try {
+            const response = await fetch('/.netlify/functions/updateTask', {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    action: 'updateStatus', 
+                    rowNumber: rowNumber, 
+                    newStatus: newStatus 
+                })
+            });
+
+            if (response.ok) {
+                // RECARGA ESTRATÉGICA: Al actualizar la tarea, recalculamos 
+                // automáticamente el progreso del Hito en el Gantt.
+                loadAdminDashboard(localStorage.getItem('userEmail'));
+            } else {
+                throw new Error('Error en la actualización');
+            }
+        } catch (error) {
+            console.error("Fallo al actualizar tarea desde Dashboard:", error);
+            circle.style.opacity = "1";
+            circle.style.cursor = "pointer";
+            alert('No se pudo actualizar el estatus. Verifica tu conexión.');
+        }
     }
 });
 
