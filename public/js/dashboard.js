@@ -185,29 +185,41 @@ const loadAdminDashboard = async (userEmail) => {
                     const row = document.createElement('div');
                     row.className = 'grid grid-cols-13 border-b hover:bg-slate-50 relative min-h-[40px] items-center group';
                     
-                    let rowHtml = `<div class="p-2 pl-6 border-r w-80 text-[10px] text-slate-600 italic whitespace-normal break-words shrink-0" title="${hito.nombre}">${hito.nombre}</div>`;
+                    // [PULIDO QUIRÚRGICO: UI CON CONTADOR E INTERACTIVIDAD]
+                    const totalTasks = hitoTasks.length;
+                    const completedTasks = hitoTasks.filter(t => t.status === 'Cumplida').length;
+
+                    let rowHtml = `
+                        <div class="p-2 pl-6 border-r w-80 text-[10px] text-slate-600 italic whitespace-normal break-words shrink-0 cursor-pointer hover:text-blue-600 flex items-center justify-between group/title" 
+                             onclick="const el = document.getElementById('tasks-for-${hito.id}'); el.classList.toggle('hidden'); this.querySelector('.symbol').textContent = el.classList.contains('hidden') ? '▶' : '▼';"
+                             title="Click para ver desglose">
+                            <div class="flex items-center">
+                                <span class="symbol mr-1 text-[8px] transition-transform">▶</span> ${hito.nombre}
+                            </div>
+                            <span class="text-[8px] font-bold bg-slate-100 px-1.5 rounded-full text-slate-400 group-hover/title:bg-blue-100 group-hover/title:text-blue-500 transition-colors">
+                                ${completedTasks}/${totalTasks}
+                            </span>
+                        </div>`;
+
                     for(let i=1; i<=12; i++) { rowHtml += `<div class="border-r h-full"></div>`; }
                     
-                    // LÓGICA DE NORMALIZACIÓN TEMPORAL (Gantt Multi-año)
                     let colStart = null;
                     if (dStart) {
-                        if (dStart.getFullYear() < curYear) colStart = 2; // Inició antes de este año (Enero)
+                        if (dStart.getFullYear() < curYear) colStart = 2;
                         else if (dStart.getFullYear() === curYear) colStart = dStart.getMonth() + 2;
-                        else colStart = 14; // Inicia el próximo año (Fuera de rango)
+                        else colStart = 14;
                     }
 
                     let colEnd = null;
                     if (dEnd) {
-                        if (dEnd.getFullYear() > curYear) colEnd = 13; // Termina después de este año (Diciembre)
+                        if (dEnd.getFullYear() > curYear) colEnd = 13;
                         else if (dEnd.getFullYear() === curYear) colEnd = dEnd.getMonth() + 2;
-                        else colEnd = 1; // Terminó el año pasado (Fuera de rango)
+                        else colEnd = 1;
                     }
 
-                    // Fallbacks de seguridad para asegurar visibilidad si existe al menos una fecha
                     if (colStart === null && colEnd !== null) colStart = colEnd;
                     if (colEnd === null && colStart !== null) colEnd = colStart;
 
-                    // LÓGICA QUIRÚRGICA: Forzamos el estiramiento de la barra para ocupar el colSpan
                     if (colStart !== null && colEnd !== null && colStart <= 13 && colEnd >= 2 && colStart <= colEnd) {
                         const colSpan = (colEnd - colStart) + 1;
                         rowHtml += `
@@ -221,6 +233,43 @@ const loadAdminDashboard = async (userEmail) => {
                     }
                     row.innerHTML = rowHtml;
                     ganttContainer.appendChild(row);
+
+                    // [PASO 2: CONTENEDOR DE TAREAS OCULTO]
+                    const taskContainer = document.createElement('div');
+                    taskContainer.id = `tasks-for-${hito.id}`;
+                    taskContainer.className = 'hidden bg-slate-50 border-b text-[9px] text-slate-500';
+                    taskContainer.style.gridColumn = "1 / span 13"; // Ocupa todo el ancho del Gantt
+                    
+                    if (hitoTasks.length === 0) {
+                        taskContainer.innerHTML = `<div class="p-2 pl-12 italic">No hay tareas operativas vinculadas a este hito.</div>`;
+                    } else {
+                        // [PASO 2: LISTA DE TAREAS CON CAPACIDAD DE CAMBIO DE ESTATUS]
+                    const taskContainer = document.createElement('div');
+                    taskContainer.id = `tasks-for-${hito.id}`;
+                    taskContainer.className = 'hidden bg-slate-50 border-b text-[9px] text-slate-500 shadow-inner';
+                    taskContainer.style.gridColumn = "1 / span 13";
+                    
+                    if (totalTasks === 0) {
+                        taskContainer.innerHTML = `<div class="p-2 pl-12 italic">No hay tareas operativas vinculadas.</div>`;
+                    } else {
+                        taskContainer.innerHTML = hitoTasks.map(t => `
+                            <div class="flex items-center justify-between p-2 pl-12 border-b border-slate-100 hover:bg-white transition-colors group/task">
+                                <div class="flex items-center gap-2">
+                                    <span class="status-circle-dashboard h-3 w-3 rounded-full cursor-pointer shadow-sm hover:scale-110 transition-transform ${t.status === 'Cumplida' ? 'bg-green-500' : 'bg-amber-500'}"
+                                          data-row="${t.rowNumber}" 
+                                          data-status="${t.status}"
+                                          title="Cambiar estatus"></span>
+                                    <span class="${t.status === 'Cumplida' ? 'line-through opacity-50' : 'text-slate-700 font-medium'}">${t.description}</span>
+                                </div>
+                                <div class="flex gap-4 pr-4 items-center">
+                                    <span class="text-[8px] bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-400 font-bold uppercase">${t.assignedTo.split('@')[0]}</span>
+                                    <span class="font-mono text-[8px] text-slate-400">${t.dueDate}</span>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                    }
+                    ganttContainer.appendChild(taskContainer);
                 });
             });
         });
