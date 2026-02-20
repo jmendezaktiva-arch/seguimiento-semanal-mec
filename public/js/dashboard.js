@@ -169,17 +169,28 @@ const loadAdminDashboard = async (userEmail) => {
             ganttContainer.appendChild(areaRow);
 
             Object.keys(hierarchy[area]).forEach(proyecto => {
-                // Cálculo de totalización: Contamos cuántos hitos tiene este proyecto específico
-                const totalHitos = hierarchy[area][proyecto].length;
+                // LÓGICA DE AGREGACIÓN: Obtenemos todas las tareas de todos los hitos de este proyecto
+                const projectHitosIds = hierarchy[area][proyecto].map(h => h.id);
+                const projectTasks = allTasks.filter(t => projectHitosIds.includes(t.hitoId));
+                
+                const totalTasks = projectTasks.length;
+                const completedTasks = projectTasks.filter(t => t.status === 'Cumplida').length;
+                const projectProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+                // Definimos color según avance para facilitar lectura rápida
+                const badgeColor = projectProgress >= 80 ? 'bg-green-100 text-green-800' : (projectProgress >= 40 ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600');
 
                 const projectRow = document.createElement('div');
-                projectRow.className = 'grid grid-cols-13 bg-slate-50 border-b font-semibold text-[10px] text-blue-700 items-center';
+                projectRow.className = 'grid grid-cols-13 bg-slate-50 border-b font-semibold text-[10px] text-blue-900 items-center shadow-inner';
                 projectRow.innerHTML = `
-                    <div class="p-2 pl-4 border-r w-80 whitespace-normal break-words shrink-0 flex justify-between items-center">
+                    <div class="p-2 pl-4 border-r w-80 whitespace-normal break-words shrink-0 flex justify-between items-center bg-blue-50/50">
                         <span>📁 ${proyecto}</span>
-                        <span class="mr-2 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-[9px] shadow-sm">
-                            ${totalHitos} ${totalHitos === 1 ? 'hito' : 'hitos'}
-                        </span>
+                        <div class="flex items-center gap-2 mr-2">
+                            <span class="text-[8px] text-slate-400 uppercase font-bold">Avance:</span>
+                            <span class="${badgeColor} px-2 py-0.5 rounded-full text-[9px] font-black border border-current/10 shadow-sm">
+                                ${projectProgress}%
+                            </span>
+                        </div>
                     </div>` + Array(12).fill('<div class="border-r h-full"></div>').join('');
                 ganttContainer.appendChild(projectRow);
 
