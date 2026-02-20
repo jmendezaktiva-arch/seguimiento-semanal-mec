@@ -338,8 +338,72 @@ const loadAdminDashboard = async (userEmail) => {
         });
     });
 
-    // Nota Quirúrgica: Bloque de re-declaración eliminado. 
-    // El selector ya se pobló correctamente en la línea 53 usando la Fuente de Verdad (Excel).
+    // --- MODIFICACIÓN QUIRÚRGICA: INDICADORES DE AVANCE ESTRATÉGICO ---
+    const globalProgressContainer = document.getElementById('global-progress-container');
+    const projectsStatsGrid = document.getElementById('projects-stats-grid');
+
+    if (globalProgressContainer && projectsStatsGrid) {
+        // 1. Cálculo del Avance Global (Toda la Empresa)
+        const globalTotal = allTasks.length;
+        const globalCompleted = allTasks.filter(t => t.status === 'Cumplida').length;
+        const globalPercent = globalTotal > 0 ? Math.round((globalCompleted / globalTotal) * 100) : 0;
+
+        globalProgressContainer.innerHTML = `
+            <div class="bg-slate-800 rounded-xl p-6 text-white shadow-lg border-l-8 border-blue-500 transition-all hover:scale-[1.01]">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <p class="text-slate-400 text-xs uppercase tracking-widest font-bold">Salud Estratégica Global</p>
+                        <h4 class="text-4xl font-black">${globalPercent}%</h4>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-2xl font-bold">${globalCompleted} <span class="text-slate-500">/</span> ${globalTotal}</p>
+                        <p class="text-slate-400 text-[10px] uppercase font-bold tracking-tighter">Total Tareas Ejecutadas</p>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-4 overflow-hidden border border-slate-600 shadow-inner">
+                    <div class="bg-blue-500 h-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(59,130,246,0.6)]" 
+                         style="width: ${globalPercent}%"></div>
+                </div>
+            </div>`;
+
+        // 2. Cálculo y Renderizado por Proyecto Individual
+        let projectsHtml = '';
+        Object.keys(hierarchy).forEach(area => {
+            Object.keys(hierarchy[area]).forEach(proyecto => {
+                const projectHitoIds = hierarchy[area][proyecto].map(h => h.id);
+                const pTasks = allTasks.filter(t => projectHitoIds.includes(t.hitoId));
+                const pTotal = pTasks.length;
+                const pCompleted = pTasks.filter(t => t.status === 'Cumplida').length;
+                const pPercent = pTotal > 0 ? Math.round((pCompleted / pTotal) * 100) : 0;
+                
+                // Color semafórico dinámico
+                const accentColor = pPercent >= 80 ? 'border-green-500' : (pPercent >= 40 ? 'border-blue-500' : 'border-amber-500');
+                const barColor = pPercent >= 80 ? 'bg-green-500' : (pPercent >= 40 ? 'bg-blue-500' : 'bg-amber-500');
+
+                projectsHtml += `
+                    <div class="bg-white p-5 rounded-lg shadow-sm border-t-4 ${accentColor} hover:shadow-md transition-all group">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="max-w-[75%]">
+                                <p class="text-[9px] text-slate-400 uppercase font-black truncate tracking-tighter">${area}</p>
+                                <h5 class="text-sm font-bold text-slate-800 leading-tight group-hover:text-blue-600 transition-colors">${proyecto}</h5>
+                            </div>
+                            <span class="text-xl font-black text-slate-700">${pPercent}%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 mb-3 shadow-inner">
+                            <div class="h-full rounded-full ${barColor} transition-all duration-700 shadow-sm" style="width: ${pPercent}%"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-500 font-bold uppercase tracking-tighter">
+                            <span class="flex items-center gap-1">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
+                                ${pCompleted}/${pTotal} Tareas
+                            </span>
+                            <span>${hierarchy[area][proyecto].length} Hitos</span>
+                        </div>
+                    </div>`;
+            });
+        });
+        projectsStatsGrid.innerHTML = projectsHtml;
+    }
 
   } catch (error) {
     console.error("Fallo crítico en Dashboard Admin:", error);
