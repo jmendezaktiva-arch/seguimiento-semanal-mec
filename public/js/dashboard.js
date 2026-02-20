@@ -169,9 +169,18 @@ const loadAdminDashboard = async (userEmail) => {
             ganttContainer.appendChild(areaRow);
 
             Object.keys(hierarchy[area]).forEach(proyecto => {
+                // Cálculo de totalización: Contamos cuántos hitos tiene este proyecto específico
+                const totalHitos = hierarchy[area][proyecto].length;
+
                 const projectRow = document.createElement('div');
                 projectRow.className = 'grid grid-cols-13 bg-slate-50 border-b font-semibold text-[10px] text-blue-700 items-center';
-                projectRow.innerHTML = `<div class="p-2 pl-4 border-r w-80 whitespace-normal break-words shrink-0">📁 ${proyecto}</div>` + Array(12).fill('<div class="border-r h-full"></div>').join('');
+                projectRow.innerHTML = `
+                    <div class="p-2 pl-4 border-r w-80 whitespace-normal break-words shrink-0 flex justify-between items-center">
+                        <span>📁 ${proyecto}</span>
+                        <span class="mr-2 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-[9px] shadow-sm">
+                            ${totalHitos} ${totalHitos === 1 ? 'hito' : 'hitos'}
+                        </span>
+                    </div>` + Array(12).fill('<div class="border-r h-full"></div>').join('');
                 ganttContainer.appendChild(projectRow);
 
                 hierarchy[area][proyecto].forEach(hito => {
