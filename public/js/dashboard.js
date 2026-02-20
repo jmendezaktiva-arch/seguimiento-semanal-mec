@@ -137,6 +137,17 @@ const loadAdminDashboard = async (userEmail) => {
         });
     }
 
+    // --- PROCESAMIENTO DE DATOS (JERARQUÍA ESTRATÉGICA) ---
+    // Calculamos la jerarquía aquí arriba para que esté disponible en Gantt y Métricas
+    const hierarchy = allHitos.reduce((acc, hito) => {
+        const area = (hito.area || '').trim() || 'Sin Área';
+        const proyecto = (hito.proyecto || '').trim() || 'Proyecto General';
+        if (!acc[area]) acc[area] = {};
+        if (!acc[area][proyecto]) acc[area][proyecto] = [];
+        acc[area][proyecto].push(hito);
+        return acc;
+    }, {});
+
     // 1. RENDERIZAR CRONOGRAMA TIPO GANTT (NIVEL 1)
     ganttContainer.innerHTML = '';
 
@@ -146,20 +157,9 @@ const loadAdminDashboard = async (userEmail) => {
         const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
         const header = document.createElement('div');
         header.className = 'grid grid-cols-13 border-b bg-slate-50 font-bold text-[10px] text-slate-500 uppercase tracking-tighter sticky top-0 z-20';
-        // SINCRONIZACIÓN: Usamos w-80 (320px) para coincidir con la cuadrícula del CSS
         header.innerHTML = `<div class="p-2 border-r w-80 bg-slate-100 shrink-0">Jerarquía / Mes</div>` + 
                            meses.map(m => `<div class="p-2 text-center border-r min-w-[40px]">${m}</div>`).join('');
         ganttContainer.appendChild(header);
-
-        // AGRUPACIÓN JERÁRQUICA
-        const hierarchy = allHitos.reduce((acc, hito) => {
-            const area = (hito.area || '').trim() || 'Sin Área';
-            const proyecto = (hito.proyecto || '').trim() || 'Proyecto General';
-            if (!acc[area]) acc[area] = {};
-            if (!acc[area][proyecto]) acc[area][proyecto] = [];
-            acc[area][proyecto].push(hito);
-            return acc;
-        }, {});
 
         Object.keys(hierarchy).forEach(area => {
             const areaRow = document.createElement('div');
@@ -542,18 +542,24 @@ document.getElementById('add-hito-form')?.addEventListener('submit', async (e) =
 // ############### DIMENSIÓN OPERATIVA (USUARIO) ###############
 const loadUserDashboard = async (userEmail) => {
     const weekId = getCurrentWeekId();
+    const userRole = localStorage.getItem('userRole');
     const resultsContainer = document.getElementById('user-results-container');
+    const globalProgressContainer = document.getElementById('user-global-progress-container');
+    const projectsStatsGrid = document.getElementById('user-projects-stats-grid');
     
     try {
-        const [tasksResponse, resultsResponse] = await Promise.all([
-            fetch(`/.netlify/functions/getTasks?email=${userEmail}&scope=user`),
-            fetch(`/.netlify/functions/getResultados?email=${userEmail}&weekId=${weekId}&scope=user`)
+        const [tasksResponse, resultsResponse, hitosResponse] = await Promise.all([
+            fetch(`/.netlify/functions/getTasks?email=${userEmail}&scope=all&role=${userRole}`),
+            fetch(`/.netlify/functions/getResultados?email=${userEmail}&weekId=${weekId}&scope=user`),
+            fetch(`/.netlify/functions/getCronograma?email=${userEmail}&scope=all&role=${userRole}`)
         ]);
 
-        const tasks = await tasksResponse.json();
+        const allTasks = await tasksResponse.json();
         const results = await resultsResponse.json();
-        const safeResults = (results || []).filter(r => r); 
+        const rawHitos = await hitosResponse.json();
 
+        // 1. PROCESAMIENTO DE COMPROMISO SEMANAL
+        const safeResults = (results || []).filter(r => r); 
         if (safeResults.length === 0) {
             resultsContainer.innerHTML = '<p class="text-slate-400 italic text-sm">Sin compromiso para esta semana.</p>';
         } else {
@@ -568,20 +574,95 @@ const loadUserDashboard = async (userEmail) => {
                 </div>`;
         }
 
-        const completed = tasks.filter(t => t.status === 'Cumplida').length;
-        const total = tasks.length;
-        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+        // 2. MI CUMPLIMIENTO INDIVIDUAL (Filtramos de allTasks)
+        const myTasks = allTasks.filter(t => t.assignedTo === userEmail);
+        const myCompleted = myTasks.filter(t => t.status === 'Cumplida').length;
+        const myTotal = myTasks.length;
+        const myPercentage = myTotal > 0 ? Math.round((myCompleted / myTotal) * 100) : 0;
         
-        document.getElementById('completedTasksCount').textContent = completed;
-        document.getElementById('pendingTasksCount').textContent = total - completed;
-        document.getElementById('performancePercentage').textContent = `${percentage}%`;
+        document.getElementById('completedTasksCount').textContent = myCompleted;
+        document.getElementById('pendingTasksCount').textContent = myTotal - myCompleted;
+        document.getElementById('performancePercentage').textContent = `${myPercentage}%`;
 
-        let color = percentage >= 80 ? '#22c55e' : (percentage >= 60 ? '#f59e0b' : '#ef4444');
+        let color = myPercentage >= 80 ? '#22c55e' : (myPercentage >= 60 ? '#f59e0b' : '#ef4444');
         const chartCanvas = document.getElementById('performanceChart');
         if(window.myPerformanceChart) window.myPerformanceChart.destroy();
-        renderDoughnutChart(chartCanvas, completed, total - completed, color);
+        renderDoughnutChart(chartCanvas, myCompleted, myTotal - myCompleted, color);
 
-    } catch (error) { console.error(error); }
+        // 3. CÁLCULO DE AVANCE GLOBAL Y POR PROYECTO
+        const globalTotal = allTasks.length;
+        const globalCompleted = allTasks.filter(t => t.status === 'Cumplida').length;
+        const globalPercent = globalTotal > 0 ? Math.round((globalCompleted / globalTotal) * 100) : 0;
+
+        if (globalProgressContainer) {
+            globalProgressContainer.innerHTML = `
+                <div class="bg-slate-800 rounded-xl p-6 text-white shadow-lg border-l-8 border-blue-500 transition-all">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <p class="text-slate-400 text-xs uppercase tracking-widest font-bold">Salud Estratégica de la Empresa</p>
+                            <h4 class="text-4xl font-black">${globalPercent}%</h4>
+                        </div>
+                        <div class="text-right text-slate-400">
+                            <p class="text-xl font-bold text-white">${globalCompleted} / ${globalTotal}</p>
+                            <p class="text-[10px] uppercase font-bold tracking-tighter">Tareas Totales Ejecutadas</p>
+                        </div>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-3 overflow-hidden border border-slate-600">
+                        <div class="bg-blue-500 h-full transition-all duration-1000 shadow-[0_0_10px_rgba(59,130,246,0.5)]" style="width: ${globalPercent}%"></div>
+                    </div>
+                </div>`;
+        }
+
+        // 4. INDICADORES POR PROYECTO (JERARQUÍA)
+        const allHitos = rawHitos.map(h => ({
+            id: h.id || h.ID || '',
+            area: (h.area || h.Area || 'General').trim(),
+            proyecto: (h.proyecto || h.Proyecto || 'Proyecto General').trim()
+        }));
+
+        const hierarchy = allHitos.reduce((acc, hito) => {
+            if (!acc[hito.area]) acc[hito.area] = {};
+            if (!acc[hito.area][hito.proyecto]) acc[hito.area][hito.proyecto] = [];
+            acc[hito.area][hito.proyecto].push(hito);
+            return acc;
+        }, {});
+
+        let projectsHtml = '';
+        Object.keys(hierarchy).forEach(area => {
+            Object.keys(hierarchy[area]).forEach(proyecto => {
+                const projectHitoIds = hierarchy[area][proyecto].map(h => h.id);
+                const pTasks = allTasks.filter(t => projectHitoIds.includes(t.hitoId));
+                if (pTasks.length === 0) return; // No mostramos proyectos vacíos
+
+                const pTotal = pTasks.length;
+                const pCompleted = pTasks.filter(t => t.status === 'Cumplida').length;
+                const pPercent = Math.round((pCompleted / pTotal) * 100);
+                const accentColor = pPercent >= 80 ? 'border-green-500' : (pPercent >= 40 ? 'border-blue-500' : 'border-amber-500');
+
+                projectsHtml += `
+                    <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 ${accentColor} hover:shadow-md transition-all">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="max-w-[70%]">
+                                <p class="text-[8px] text-slate-400 uppercase font-black tracking-tighter">${area}</p>
+                                <h5 class="text-xs font-bold text-slate-800 truncate">${proyecto}</h5>
+                            </div>
+                            <span class="text-lg font-black text-slate-700">${pPercent}%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2 mb-2 shadow-inner">
+                            <div class="h-full rounded-full ${pPercent >= 80 ? 'bg-green-500' : (pPercent >= 40 ? 'bg-blue-500' : 'bg-amber-500')}" style="width: ${pPercent}%"></div>
+                        </div>
+                        <div class="flex justify-between text-[9px] text-slate-500 font-bold uppercase tracking-tighter">
+                            <span>${pCompleted}/${pTotal} Tareas</span>
+                            <span>${hierarchy[area][proyecto].length} Hitos</span>
+                        </div>
+                    </div>`;
+            });
+        });
+        if (projectsStatsGrid) projectsStatsGrid.innerHTML = projectsHtml || '<p class="text-slate-400 italic text-sm">No hay proyectos activos vinculados.</p>';
+
+    } catch (error) { 
+        console.error("Error cargando dashboard de usuario:", error);
+    }
 };
 
 const renderDoughnutChart = (canvasElement, completed, pending, color) => {

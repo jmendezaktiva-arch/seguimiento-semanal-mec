@@ -137,6 +137,17 @@
                     </table>
                 </div>
             </div>
+            <div class="mt-8 pt-6 border-t border-slate-100">
+                <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <span class="p-2 bg-blue-600 rounded-lg text-white">📊</span>
+                    Indicadores de Avance por Proyecto
+                </h3>
+                
+                <div id="global-progress-container" class="mb-6"></div>
+
+                <div id="projects-stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+            </div>
         </div>
 
         <div id="user-view">
@@ -165,8 +176,21 @@
                 </div>
             </div>
         </div>
-    </div>
+        <div class="mt-8 pt-6 border-t border-slate-200">
+            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <span class="p-2 bg-blue-600 rounded-lg text-white">📊</span>
+                Avance de mis Proyectos y Empresa
+            </h3>
+            
+            <div id="user-global-progress-container" class="mb-6">
+                <div class="animate-pulse bg-slate-200 h-24 rounded-xl"></div>
             </div>
+
+            <div id="user-projects-stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <p class="text-slate-400 italic text-sm">Calculando avance de proyectos...</p>
+            </div>
+        </div>
+    </div>
 
     </main>
 
