@@ -82,25 +82,26 @@ exports.handler = async (event) => {
     }
 
     if (data.action === 'updateFull') {
-      // RE-ALINEACIÓN QUIRÚRGICA: Extraemos startDate e incluimos la columna J
-      const { rowNumber, description, assignedTo, startDate, dueDate, status, hitoId, area, proyecto, asignadoPor } = data;
+      // RE-ALINEACIÓN QUIRÚRGICA: Extraemos startDate, rescheduledDate e incluimos la columna K
+      const { rowNumber, description, assignedTo, startDate, dueDate, status, hitoId, area, proyecto, asignadoPor, rescheduledDate } = data;
       
       const updatedValues = [
-        description,      // B: Descripción
-        assignedTo,       // C: Responsable
-        startDate || '',  // D: Fecha Inicio
-        dueDate,          // E: Fecha Fin / Entrega
-        status,           // F: Estatus
-        hitoId || '',     // G: ID Hito
-        area || '',       // H: Área
-        proyecto || '',   // I: Proyecto
-        asignadoPor || '' // J: Quién asignó
+        description,         // B: Descripción
+        assignedTo,          // C: Responsable
+        startDate || '',     // D: Fecha Inicio
+        dueDate,             // E: Fecha Fin / Entrega (Original)
+        status,              // F: Estatus
+        hitoId || '',        // G: ID Hito
+        area || '',          // H: Área
+        proyecto || '',      // I: Proyecto
+        asignadoPor || '',    // J: Quién asignó
+        rescheduledDate || '' // K: Fecha Reprogramada
       ];
 
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        // RANGO EXPANDIDO: Ahora actualizamos desde B hasta J para cubrir la nueva estructura
-        range: `${sheetName}!B${rowNumber}:J${rowNumber}`,
+        // RANGO EXPANDIDO: Ahora actualizamos hasta la columna K
+        range: `${sheetName}!B${rowNumber}:K${rowNumber}`,
         valueInputOption: 'USER_ENTERED',
         resource: { values: [updatedValues] },
       });

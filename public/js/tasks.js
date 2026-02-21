@@ -214,16 +214,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const statusColor = isCompleted ? 'bg-green-500' : 'bg-amber-500';
                 
-                // Procesamiento de Rango de Fechas
+                // Procesamiento de Rango de Fechas y Reprogramación
                 const dStart = parseDate(task.startDate);
-                const dEnd = parseDate(task.dueDate);
+                const dEndOriginal = parseDate(task.dueDate);
+                const dRescheduled = parseDate(task.rescheduledDate);
                 
                 const fStart = dStart ? dStart.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '';
-                const fEnd = dEnd ? dEnd.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '---';
+                const fEndOriginal = dEndOriginal ? dEndOriginal.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '---';
+                const fRescheduled = dRescheduled ? dRescheduled.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : null;
                 
-                // Si hay fecha de inicio, mostramos el rango; si no, solo la entrega
-                const dateDisplay = fStart ? `${fStart} - ${fEnd}` : fEnd;
-                
+                // Lógica de visualización de Trazabilidad:
+                const dateHTML = fRescheduled 
+                    ? `<div class="flex flex-col"><span class="text-[9px] line-through text-slate-400">Plan: ${fEndOriginal}</span><span class="text-blue-600 font-bold">${fRescheduled}</span></div>`
+                    : `<span class="text-slate-500 font-bold">${fStart ? fStart + ' - ' : ''}${fEndOriginal}</span>`;
+
                 taskElement.innerHTML = `
                     <div class="flex items-center flex-1">
                         <div class="status-circle h-6 w-6 cursor-pointer rounded-full ${statusColor} shrink-0"></div>
@@ -236,9 +240,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                     </div>
-                    <div class="text-right ml-4 shrink-0">
-                        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-tighter">Plazo</span>
-                        <span class="text-[11px] font-bold text-slate-500">${dateDisplay}</span>
+                    <div class="flex items-center gap-3 ml-4 shrink-0 text-right">
+                        <div>
+                            <span class="block text-[10px] font-black text-slate-400 uppercase tracking-tighter">Plazo</span>
+                            <div class="text-[11px] leading-tight">${dateHTML}</div>
+                        </div>
+                        <button class="reschedule-btn p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-blue-600 transition-colors" title="Reprogramar fecha">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </button>
                     </div>
                 `;
                 monthTasksContainer.appendChild(taskElement);
@@ -333,6 +344,46 @@ document.addEventListener('DOMContentLoaded', () => {
                     container.style.display = container.style.display === 'none' ? 'block' : 'none';
                 }
             }
+
+            // --- AJUSTE QUIRÚRGICO: Lógica de Reprogramación ---
+            const rescheduleBtn = event.target.closest('.reschedule-btn');
+            if (rescheduleBtn) {
+                const taskElement = rescheduleBtn.closest('div[data-row-number]');
+                const rowNumber = taskElement.dataset.rowNumber;
+                
+                // Buscamos los datos de la tarea actual en nuestro array local
+                const task = userTasks.find(t => t.rowNumber == rowNumber);
+                
+                const newDate = prompt("Introduce la nueva fecha de finalización (AAAA-MM-DD):", task.rescheduledDate || task.dueDate);
+                
+                if (newDate && newDate !== task.rescheduledDate) {
+                    try {
+                        rescheduleBtn.disabled = true;
+                        await fetch('/.netlify/functions/updateTask', {
+                            method: 'POST',
+                            body: JSON.stringify({ 
+                                action: 'updateFull', 
+                                rowNumber,
+                                description: task.description,
+                                assignedTo: task.assignedTo,
+                                startDate: task.startDate,
+                                dueDate: task.dueDate, // Se mantiene la original intacta
+                                status: task.status,
+                                hitoId: task.hitoId,
+                                area: task.area,
+                                proyecto: task.proyecto,
+                                asignadoPor: task.asignadoPor,
+                                rescheduledDate: newDate // Se guarda en la columna K
+                            }),
+                        });
+                        loadTasks(); // Recargamos para ver el cambio visual (tachado)
+                    } catch (error) {
+                        alert('No se pudo reprogramar la tarea.');
+                        rescheduleBtn.disabled = false;
+                    }
+                }
+            }
+
         });
     }
 
