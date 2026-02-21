@@ -245,8 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="block text-[10px] font-black text-slate-400 uppercase tracking-tighter">Plazo</span>
                             <div class="text-[11px] leading-tight">${dateHTML}</div>
                         </div>
-                        <button class="reschedule-btn p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-blue-600 transition-colors" title="Reprogramar fecha">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <button class="reschedule-btn p-2 bg-blue-100 text-blue-700 hover:bg-blue-700 hover:text-white border border-blue-300 rounded-lg shadow-md transition-all duration-300" title="Reprogramar fecha de entrega">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                         </button>
